@@ -2,11 +2,52 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import AuthPage from "./pages/AuthPage";
+import AdminDashboard from "./pages/AdminDashboard";
+import KanbanBoard from "./pages/KanbanBoard";
+import ProjectInitiation from "./pages/ProjectInitiation";
+import ProjectsView from "./pages/ProjectsView";
+import DashboardLayout from "./components/DashboardLayout";
+import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();
+
+function AppRoutes() {
+  const { user, role, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) return <AuthPage />;
+
+  return (
+    <DashboardLayout>
+      <Routes>
+        {role === 'admin' && <Route path="/" element={<AdminDashboard />} />}
+        {role === 'staff' && <Route path="/" element={<Navigate to="/pipeline" replace />} />}
+        {role === 'client' && <Route path="/" element={<Navigate to="/projects" replace />} />}
+        
+        {(role === 'admin' || role === 'staff') && (
+          <Route path="/pipeline" element={<KanbanBoard />} />
+        )}
+        
+        {role === 'client' && (
+          <Route path="/new-project" element={<ProjectInitiation />} />
+        )}
+        
+        <Route path="/projects" element={<ProjectsView />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </DashboardLayout>
+  );
+}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -14,11 +55,9 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

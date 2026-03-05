@@ -1,0 +1,117 @@
+import { useAuth } from '@/contexts/AuthContext';
+import { NavLink } from '@/components/NavLink';
+import { useLocation } from 'react-router-dom';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarFooter,
+  useSidebar,
+} from '@/components/ui/sidebar';
+import { LayoutDashboard, KanbanSquare, FilePlus, FolderOpen, ShieldCheck, LogOut, ChevronLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+
+export function AppSidebar() {
+  const { role, profile, signOut } = useAuth();
+  const { state, toggleSidebar } = useSidebar();
+  const collapsed = state === 'collapsed';
+  const location = useLocation();
+
+  const navItems = [];
+
+  if (role === 'admin') {
+    navItems.push(
+      { title: 'Command Center', url: '/', icon: LayoutDashboard },
+      { title: 'Deal Pipeline', url: '/pipeline', icon: KanbanSquare },
+      { title: 'All Projects', url: '/projects', icon: FolderOpen },
+    );
+  }
+
+  if (role === 'staff') {
+    navItems.push(
+      { title: 'Deal Pipeline', url: '/pipeline', icon: KanbanSquare },
+      { title: 'My Deals', url: '/projects', icon: FolderOpen },
+    );
+  }
+
+  if (role === 'client') {
+    navItems.push(
+      { title: 'New Project', url: '/new-project', icon: FilePlus },
+      { title: 'My Projects', url: '/projects', icon: FolderOpen },
+    );
+  }
+
+  return (
+    <Sidebar collapsible="icon" className="border-r-0">
+      <SidebarContent className="bg-sidebar">
+        <SidebarGroup>
+          <div className="flex items-center gap-2 px-3 py-4">
+            <div className="h-8 w-8 rounded-lg gradient-primary flex items-center justify-center shrink-0">
+              <ShieldCheck className="h-5 w-5 text-primary-foreground" />
+            </div>
+            {!collapsed && (
+              <div className="animate-slide-in">
+                <h2 className="font-display font-bold text-sm text-sidebar-primary-foreground">Teledata</h2>
+                <p className="text-xs text-sidebar-foreground/60">Sales Engine</p>
+              </div>
+            )}
+            {!collapsed && (
+              <Button variant="ghost" size="icon" className="ml-auto h-7 w-7 text-sidebar-foreground/60 hover:text-sidebar-foreground" onClick={toggleSidebar}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+
+          <SidebarGroupLabel className="text-sidebar-foreground/40 text-xs uppercase tracking-wider">
+            {!collapsed && 'Navigation'}
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {navItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to={item.url}
+                      end={item.url === '/'}
+                      className="text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                      activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                    >
+                      <item.icon className="mr-2 h-4 w-4" />
+                      {!collapsed && <span>{item.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+
+      <SidebarFooter className="bg-sidebar border-t border-sidebar-border">
+        <div className="flex items-center gap-2 px-3 py-3">
+          <div className="h-8 w-8 rounded-full gradient-accent flex items-center justify-center shrink-0">
+            <span className="text-xs font-bold text-accent-foreground">
+              {profile?.full_name?.charAt(0)?.toUpperCase() || '?'}
+            </span>
+          </div>
+          {!collapsed && (
+            <div className="flex-1 min-w-0 animate-slide-in">
+              <p className="text-sm font-medium text-sidebar-foreground truncate">{profile?.full_name || 'User'}</p>
+              <p className="text-xs text-sidebar-foreground/50 capitalize">{role}</p>
+            </div>
+          )}
+          {!collapsed && (
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-sidebar-foreground/50 hover:text-destructive" onClick={signOut}>
+              <LogOut className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      </SidebarFooter>
+    </Sidebar>
+  );
+}
