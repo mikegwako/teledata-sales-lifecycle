@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ShieldCheck, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import teledataLogo from '@/assets/teledata-logo.jpeg';
 
 export default function AuthPage() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -22,7 +23,7 @@ export default function AuthPage() {
     try {
       if (isSignUp) {
         await signUp(email, password, fullName);
-        toast({ title: 'Account created!', description: 'Check your email to confirm your account.' });
+        toast({ title: 'Account created!', description: 'You can now sign in.' });
       } else {
         await signIn(email, password);
       }
@@ -37,10 +38,8 @@ export default function AuthPage() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md animate-fade-in">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 mb-3">
-            <div className="h-10 w-10 rounded-lg gradient-primary flex items-center justify-center">
-              <ShieldCheck className="h-6 w-6 text-primary-foreground" />
-            </div>
+          <div className="inline-flex items-center gap-3 mb-3">
+            <img src={teledataLogo} alt="Teledata Africa" className="h-12 w-12 rounded-xl object-cover" />
             <h1 className="text-2xl font-bold font-display text-foreground">Teledata Africa</h1>
           </div>
           <p className="text-muted-foreground text-sm">Sales & Lifecycle Engine</p>

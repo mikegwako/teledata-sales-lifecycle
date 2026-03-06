@@ -14,11 +14,80 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          deal_id: string | null
+          details: string | null
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          deal_id?: string | null
+          details?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          deal_id?: string | null
+          details?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_logs_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comments: {
+        Row: {
+          content: string
+          created_at: string | null
+          deal_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          deal_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          deal_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deals: {
         Row: {
           assigned_to: string | null
           client_id: string | null
+          cost: number | null
           created_at: string | null
+          deal_number: number
           description: string | null
           id: string
           service_type: string | null
@@ -30,7 +99,9 @@ export type Database = {
         Insert: {
           assigned_to?: string | null
           client_id?: string | null
+          cost?: number | null
           created_at?: string | null
+          deal_number?: number
           description?: string | null
           id?: string
           service_type?: string | null
@@ -42,7 +113,9 @@ export type Database = {
         Update: {
           assigned_to?: string | null
           client_id?: string | null
+          cost?: number | null
           created_at?: string | null
+          deal_number?: number
           description?: string | null
           id?: string
           service_type?: string | null
