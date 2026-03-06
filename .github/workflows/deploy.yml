@@ -17,8 +17,8 @@ jobs:
         run: npx supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_ID }} -p ${{ secrets.SUPABASE_DB_PASSWORD }}
 
       - name: deploy migrations
-        # We add --accept-expansion to bypass the [Y/n] prompt
-        run: npx supabase db push --accept-expansion
+        # We use --yes as shown in your help output to answer yes to all prompts
+        run: npx supabase db push --yes
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
