@@ -1,6 +1,6 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { NavLink } from '@/components/NavLink';
-import { useLocation } from 'react-router-dom';
+import teledataLogo from '@/assets/teledata-logo.jpeg';
 import {
   Sidebar,
   SidebarContent,
@@ -13,14 +13,13 @@ import {
   SidebarFooter,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { LayoutDashboard, KanbanSquare, FilePlus, FolderOpen, ShieldCheck, LogOut, ChevronLeft } from 'lucide-react';
+import { LayoutDashboard, KanbanSquare, FilePlus, FolderOpen, LogOut, ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export function AppSidebar() {
   const { role, profile, signOut } = useAuth();
   const { state, toggleSidebar } = useSidebar();
   const collapsed = state === 'collapsed';
-  const location = useLocation();
 
   const navItems = [];
 
@@ -51,12 +50,10 @@ export function AppSidebar() {
       <SidebarContent className="bg-sidebar">
         <SidebarGroup>
           <div className="flex items-center gap-2 px-3 py-4">
-            <div className="h-8 w-8 rounded-lg gradient-primary flex items-center justify-center shrink-0">
-              <ShieldCheck className="h-5 w-5 text-primary-foreground" />
-            </div>
+            <img src={teledataLogo} alt="Teledata Africa" className="h-9 w-9 rounded-lg object-cover shrink-0" />
             {!collapsed && (
               <div className="animate-slide-in">
-                <h2 className="font-display font-bold text-sm text-sidebar-primary-foreground">Teledata</h2>
+                <h2 className="font-display font-bold text-sm text-sidebar-primary-foreground">Teledata Africa</h2>
                 <p className="text-xs text-sidebar-foreground/60">Sales Engine</p>
               </div>
             )}
