@@ -106,7 +106,7 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
     setLoadingComments(true);
     const { data, error } = await supabase
       .from('comments')
-      .select('*')
+      .select('*, profile:profiles(full_name)')
       .eq('deal_id', deal.id)
       .order('created_at', { ascending: true });
 
@@ -152,6 +152,20 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } else {
       setNewComment('');
+      fetchComments();
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    const { error } = await supabase
+      .from('comments')
+      .delete()
+      .eq('id', commentId);
+
+    if (error) {
+      toast({ title: 'Error deleting comment', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Comment removed' });
       fetchComments();
     }
   };
@@ -344,16 +358,30 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
                   <p className="text-sm text-muted-foreground text-center py-6">No comments yet. Start the conversation.</p>
                 )}
                 {comments.map((c) => (
-                  <div key={c.id} className="flex gap-3">
+                  <div key={c.id} className="flex gap-3 group">
                     <div className="h-7 w-7 rounded-full gradient-primary flex items-center justify-center shrink-0">
                       <span className="text-[10px] font-bold text-primary-foreground">
                         {c.profile?.full_name?.charAt(0)?.toUpperCase() || '?'}
                       </span>
                     </div>
-                    <div className="flex-1 bg-muted/40 rounded-lg p-2.5">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold text-foreground">{c.profile?.full_name || 'User'}</span>
-                        <span className="text-[10px] text-muted-foreground">{new Date(c.created_at).toLocaleString()}</span>
+                    <div className="flex-1 bg-muted/40 rounded-lg p-2.5 relative">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold text-foreground">{c.profile?.full_name || 'User'}</span>
+                          <span className="text-[10px] text-muted-foreground">{new Date(c.created_at).toLocaleString()}</span>
+                        </div>
+                        
+                        {/* Delete Comment Logic */}
+                        {(role === 'admin' || c.user_id === user?.id) && (
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                            onClick={() => handleDeleteComment(c.id)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        )}
                       </div>
                       <p className="text-sm text-foreground mt-0.5">{c.content}</p>
                     </div>
