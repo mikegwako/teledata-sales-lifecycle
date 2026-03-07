@@ -104,12 +104,19 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
   const fetchComments = async () => {
     if (!deal) return;
     setLoadingComments(true);
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('comments')
-      .select('*, profile:profiles!comments_user_id_fkey(full_name)')
+      .select('*')
       .eq('deal_id', deal.id)
       .order('created_at', { ascending: true });
-    setComments((data as any) || []);
+
+    if (error) {
+      toast({ title: 'Error loading comments', description: error.message, variant: 'destructive' });
+      setComments([]);
+    } else {
+      setComments((data as any) || []);
+    }
+
     setLoadingComments(false);
   };
 
