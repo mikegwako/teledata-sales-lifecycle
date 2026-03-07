@@ -13,6 +13,7 @@ import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea
 import confetti from 'canvas-confetti';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ServiceTypeCombobox } from '@/components/ServiceTypeCombobox';
+import DealDetailDialog from '@/components/DealDetailDialog';
 
 interface Deal {
   id: string;
@@ -21,9 +22,11 @@ interface Deal {
   value: number;
   cost: number;
   status: string;
+  description: string;
   client_id: string;
   assigned_to: string | null;
   deal_number: number;
+  created_at: string;
   profiles?: { full_name: string } | null;
   assigned_profile?: { full_name: string } | null;
 }
@@ -45,10 +48,8 @@ export default function KanbanBoard() {
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
   const [newDealOpen, setNewDealOpen] = useState(false);
-  const [quickLogOpen, setQuickLogOpen] = useState<string | null>(null);
-  const [quickLogText, setQuickLogText] = useState('');
-  const [costEditDeal, setCostEditDeal] = useState<string | null>(null);
-  const [costValue, setCostValue] = useState('');
+  const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
   const [newDeal, setNewDeal] = useState({ title: '', service_type: '', description: '', value: '' });
 
   const fetchDeals = async () => {
@@ -80,12 +81,9 @@ export default function KanbanBoard() {
       return;
     }
 
-    // Log activity
     if (user) {
       await supabase.from('activity_logs').insert({
-        deal_id: dealId,
-        user_id: user.id,
-        action: 'status_change',
+        deal_id: dealId, user_id: user.id, action: 'status_change',
         details: `Moved deal to ${newStatus}`,
       });
     }
@@ -96,7 +94,8 @@ export default function KanbanBoard() {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
     const { error } = await supabase.from('deals').delete().eq('id', id);
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -105,7 +104,8 @@ export default function KanbanBoard() {
     }
   };
 
-  const handleClaim = async (dealId: string) => {
+  const handleClaim = async (e: React.MouseEvent, dealId: string) => {
+    e.stopPropagation();
     if (!user) return;
     const { error } = await supabase.from('deals').update({ assigned_to: user.id }).eq('id', dealId);
     if (error) {
@@ -120,12 +120,8 @@ export default function KanbanBoard() {
   const handleNewDeal = async () => {
     if (!user || !newDeal.title) return;
     const { error } = await supabase.from('deals').insert({
-      title: newDeal.title,
-      service_type: newDeal.service_type,
-      description: newDeal.description,
-      value: parseFloat(newDeal.value) || 0,
-      assigned_to: user.id,
-      status: 'Inception',
+      title: newDeal.title, service_type: newDeal.service_type, description: newDeal.description,
+      value: parseFloat(newDeal.value) || 0, assigned_to: user.id, status: 'Inception',
     });
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -137,29 +133,9 @@ export default function KanbanBoard() {
     }
   };
 
-  const handleQuickLog = async (dealId: string) => {
-    if (!user || !quickLogText.trim()) return;
-    const { error } = await supabase.from('activity_logs').insert({
-      deal_id: dealId, user_id: user.id, action: 'note', details: quickLogText.trim(),
-    });
-    if (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
-    } else {
-      toast({ title: 'Note added!' });
-      setQuickLogText('');
-      setQuickLogOpen(null);
-    }
-  };
-
-  const handleCostSave = async (dealId: string) => {
-    const { error } = await supabase.from('deals').update({ cost: parseFloat(costValue) || 0 }).eq('id', dealId);
-    if (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
-    } else {
-      toast({ title: 'Cost updated' });
-      setCostEditDeal(null);
-      fetchDeals();
-    }
+  const openDealDetail = (deal: Deal) => {
+    setSelectedDeal(deal);
+    setDetailOpen(true);
   };
 
   if (loading) {
@@ -175,7 +151,7 @@ export default function KanbanBoard() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold font-display text-foreground">Deal Pipeline</h1>
-          <p className="text-muted-foreground mt-1">Drag deals across stages to update their status</p>
+          <p className="text-muted-foreground mt-1">Click any card for full details • Drag to update stage</p>
         </div>
         {(role === 'staff' || role === 'admin') && (
           <Dialog open={newDealOpen} onOpenChange={setNewDealOpen}>
@@ -196,6 +172,21 @@ export default function KanbanBoard() {
         )}
       </div>
 
+      {/* Pipeline summary */}
+      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-4">
+        {COLUMNS.map((col) => {
+          const count = deals.filter((d) => d.status === col).length;
+          const total = deals.filter((d) => d.status === col).reduce((s, d) => s + Number(d.value || 0), 0);
+          return (
+            <div key={col} className="rounded-lg border border-border p-2 text-center bg-card">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{col}</p>
+              <p className="text-lg font-bold font-display text-foreground">{count}</p>
+              {total > 0 && <p className="text-[10px] font-mono text-primary">${total.toLocaleString()}</p>}
+            </div>
+          );
+        })}
+      </div>
+
       <DragDropContext onDragEnd={onDragEnd}>
         <div className="grid grid-cols-6 gap-3 min-w-[900px] overflow-x-auto">
           {COLUMNS.map((col) => {
@@ -206,11 +197,11 @@ export default function KanbanBoard() {
                   <div
                     ref={provided.innerRef}
                     {...provided.droppableProps}
-                    className={`rounded-lg border-t-4 ${columnColors[col]} bg-muted/30 p-2 min-h-[500px] transition-colors ${snapshot.isDraggingOver ? 'bg-primary/5' : ''}`}
+                    className={`rounded-xl border-t-4 ${columnColors[col]} bg-muted/20 p-2 min-h-[500px] transition-colors ${snapshot.isDraggingOver ? 'bg-primary/5 ring-2 ring-primary/20' : ''}`}
                   >
                     <div className="flex items-center justify-between mb-3 px-1">
-                      <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider">{col}</h3>
-                      <Badge variant="secondary" className="text-xs">{colDeals.length}</Badge>
+                      <h3 className="text-[11px] font-semibold text-foreground uppercase tracking-wider">{col}</h3>
+                      <Badge variant="secondary" className="text-[10px] h-5">{colDeals.length}</Badge>
                     </div>
 
                     {colDeals.map((deal, index) => (
@@ -219,23 +210,25 @@ export default function KanbanBoard() {
                           <Card
                             ref={provided.innerRef}
                             {...provided.draggableProps}
-                            className={`mb-2 shadow-card cursor-grab ${snapshot.isDragging ? 'shadow-elevated rotate-2' : ''} hover:shadow-elevated transition-all`}
+                            onClick={() => openDealDetail(deal)}
+                            className={`mb-2 cursor-pointer border border-border/50 ${snapshot.isDragging ? 'shadow-elevated rotate-1 ring-2 ring-primary/30' : 'shadow-card hover:shadow-elevated hover:border-primary/30'} transition-all`}
                           >
                             <CardContent className="p-3">
                               <div className="flex items-start gap-2">
-                                <div {...provided.dragHandleProps} className="mt-0.5 text-muted-foreground/40">
+                                <div {...provided.dragHandleProps} className="mt-0.5 text-muted-foreground/30 hover:text-muted-foreground transition-colors">
                                   <GripVertical className="h-4 w-4" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-medium text-foreground truncate">{deal.title}</p>
-                                  <p className="text-[10px] font-mono text-primary/60">TD-{1000 + (deal.deal_number || 0)}</p>
-                                  <p className="text-xs text-muted-foreground truncate">{deal.profiles?.full_name || 'No Client'}</p>
-                                  {deal.value > 0 && (
-                                    <p className="text-xs font-mono text-primary mt-1">${Number(deal.value).toLocaleString()}</p>
+                                  <p className="text-sm font-semibold text-foreground truncate">{deal.title}</p>
+                                  <p className="text-[10px] font-mono text-primary/60 mt-0.5">TD-{1000 + (deal.deal_number || 0)}</p>
+                                  {deal.service_type && (
+                                    <p className="text-[10px] text-muted-foreground truncate mt-0.5">{deal.service_type}</p>
                                   )}
-                                  {/* Assigned staff avatar */}
+                                  {deal.value > 0 && (
+                                    <p className="text-xs font-mono font-semibold text-primary mt-1.5">${Number(deal.value).toLocaleString()}</p>
+                                  )}
                                   {deal.assigned_profile ? (
-                                    <div className="flex items-center gap-1 mt-1">
+                                    <div className="flex items-center gap-1.5 mt-2">
                                       <div className="h-5 w-5 rounded-full gradient-accent flex items-center justify-center">
                                         <span className="text-[9px] font-bold text-accent-foreground">{deal.assigned_profile.full_name?.charAt(0)?.toUpperCase()}</span>
                                       </div>
@@ -243,48 +236,18 @@ export default function KanbanBoard() {
                                     </div>
                                   ) : (
                                     role === 'staff' && (
-                                      <Button variant="outline" size="sm" className="mt-1 h-6 text-[10px]" onClick={() => handleClaim(deal.id)}>
+                                      <Button variant="outline" size="sm" className="mt-2 h-6 text-[10px] w-full" onClick={(e) => handleClaim(e, deal.id)}>
                                         <HandMetal className="h-3 w-3 mr-1" />Claim
                                       </Button>
                                     )
                                   )}
                                 </div>
-                                <div className="flex flex-col gap-1">
-                                  {role === 'admin' && (
-                                    <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0 text-muted-foreground/40 hover:text-destructive" onClick={() => handleDelete(deal.id)}>
-                                      <Trash2 className="h-3 w-3" />
-                                    </Button>
-                                  )}
-                                  {(role === 'staff' || role === 'admin') && (
-                                    <>
-                                      <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0 text-muted-foreground/40" onClick={() => { setCostEditDeal(deal.id); setCostValue(String(deal.cost || 0)); }}>
-                                        <DollarSign className="h-3 w-3" />
-                                      </Button>
-                                      <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0 text-muted-foreground/40" onClick={() => setQuickLogOpen(deal.id)}>
-                                        <MessageSquarePlus className="h-3 w-3" />
-                                      </Button>
-                                    </>
-                                  )}
-                                </div>
+                                {role === 'admin' && (
+                                  <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0 text-muted-foreground/30 hover:text-destructive" onClick={(e) => handleDelete(e, deal.id)}>
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                )}
                               </div>
-
-                              {/* Inline cost editor */}
-                              {costEditDeal === deal.id && (
-                                <div className="mt-2 flex gap-1">
-                                  <Input type="number" value={costValue} onChange={(e) => setCostValue(e.target.value)} className="h-7 text-xs" placeholder="Cost" />
-                                  <Button size="sm" className="h-7 text-xs" onClick={() => handleCostSave(deal.id)}>Save</Button>
-                                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setCostEditDeal(null)}>✕</Button>
-                                </div>
-                              )}
-
-                              {/* Quick Log */}
-                              {quickLogOpen === deal.id && (
-                                <div className="mt-2 flex gap-1">
-                                  <Input value={quickLogText} onChange={(e) => setQuickLogText(e.target.value)} className="h-7 text-xs" placeholder="Quick note..." onKeyDown={(e) => e.key === 'Enter' && handleQuickLog(deal.id)} />
-                                  <Button size="sm" className="h-7 text-xs" onClick={() => handleQuickLog(deal.id)}>Log</Button>
-                                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setQuickLogOpen(null)}>✕</Button>
-                                </div>
-                              )}
                             </CardContent>
                           </Card>
                         )}
@@ -298,6 +261,13 @@ export default function KanbanBoard() {
           })}
         </div>
       </DragDropContext>
+
+      <DealDetailDialog
+        deal={selectedDeal}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        onDealUpdated={fetchDeals}
+      />
     </div>
   );
 }
