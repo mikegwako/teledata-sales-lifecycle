@@ -236,7 +236,7 @@ export default function KanbanBoard() {
                                     </div>
                                   ) : (
                                     role === 'staff' && (
-                                      <Button variant="outline" size="sm" className="mt-2 h-6 text-[10px] w-full" onClick={(e) => handleClaim(e, dealId)}>
+                                      <Button variant="outline" size="sm" className="mt-2 h-6 text-[10px] w-full" onClick={(e) => handleClaim(e, deal.id)}>
                                         <HandMetal className="h-3 w-3 mr-1" />Claim
                                       </Button>
                                     )
