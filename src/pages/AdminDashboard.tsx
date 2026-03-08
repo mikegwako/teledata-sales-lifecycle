@@ -38,6 +38,8 @@ interface Profile {
   phone_number: string | null;
   currency_preference: string;
   frozen_actions: string[];
+  avatar_url: string | null;
+  avatar_position: string;
 }
 
 interface UserEmail {
