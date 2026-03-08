@@ -264,6 +264,7 @@ export default function ExecutiveReport() {
                       <div key={staff.user_id} className="space-y-1">
                         <div className="flex justify-between text-sm items-center">
                           <span className="font-medium text-foreground flex items-center gap-1.5">
+                            <UserAvatar fullName={staff.name} avatarUrl={staff.avatar_url} avatarPosition={staff.avatar_position} className="h-6 w-6" fallbackClassName="text-[9px]" />
                             {staff.name}
                             {userRole && <RoleBadge role={userRole} />}
                           </span>
