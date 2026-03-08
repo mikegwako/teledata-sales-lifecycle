@@ -256,7 +256,6 @@ export default function KanbanBoard() {
                                       <span className="text-[10px] text-muted-foreground truncate">{deal.assigned_profile.full_name}</span>
                                       {deal.assigned_to && roleMap[deal.assigned_to] && <RoleBadge role={roleMap[deal.assigned_to]} />}
                                     </div>
-                                    </div>
                                   ) : (
                                     role === 'staff' && (
                                       <Button variant="outline" size="sm" className="mt-2 h-6 text-[10px] w-full" onClick={(e) => handleClaim(e, deal.id)}>
