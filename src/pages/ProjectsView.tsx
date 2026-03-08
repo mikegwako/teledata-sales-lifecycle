@@ -64,6 +64,7 @@ export default function ProjectsView() {
   const { user, role } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const roleMap = useUserRoles();
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
   const [comments, setComments] = useState<Record<string, Comment[]>>({});
