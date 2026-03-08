@@ -495,9 +495,7 @@ export default function AdminDashboard() {
                     <tr key={person.id} className="border-b border-border/50 hover:bg-muted/30">
                       <td className="py-2 px-2 sm:px-3">
                         <div className="flex items-center gap-2">
-                          <div className="h-7 w-7 rounded-full gradient-primary flex items-center justify-center shrink-0">
-                            <span className="text-[10px] font-bold text-primary-foreground">{person.full_name?.charAt(0)?.toUpperCase() || '?'}</span>
-                          </div>
+                          <UserAvatar fullName={person.full_name} avatarUrl={(person as any).avatar_url} avatarPosition={(person as any).avatar_position} className="h-7 w-7" fallbackClassName="text-[10px]" />
                           <div className="min-w-0">
                             <span className="font-medium text-foreground text-xs sm:text-sm block truncate">{person.full_name || 'Unknown'}</span>
                             {person.phone_number && (
