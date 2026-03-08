@@ -211,6 +211,30 @@ export type Database = {
           },
         ]
       }
+      login_audit_logs: {
+        Row: {
+          id: string
+          ip_address: string | null
+          login_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          ip_address?: string | null
+          login_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          id?: string
+          ip_address?: string | null
+          login_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
@@ -279,6 +303,33 @@ export type Database = {
           id?: string
           phone_number?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      tax_presets: {
+        Row: {
+          country_code: string
+          created_at: string
+          id: string
+          is_default: boolean
+          region_name: string
+          taxes: Json
+        }
+        Insert: {
+          country_code: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          region_name: string
+          taxes?: Json
+        }
+        Update: {
+          country_code?: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          region_name?: string
+          taxes?: Json
         }
         Relationships: []
       }

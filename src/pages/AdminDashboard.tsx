@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, TrendingUp, FolderOpen, Target, DollarSign, Activity, Users, ArrowUpRight, ArrowDownRight, FileBarChart, Trash2, AlertTriangle, ShieldAlert, Shield, Mail, Phone } from 'lucide-react';
+import { Loader2, TrendingUp, FolderOpen, Target, DollarSign, Activity, Users, ArrowUpRight, ArrowDownRight, FileBarChart, Trash2, AlertTriangle, ShieldAlert, Shield, Mail, Phone, Fingerprint, Globe, Monitor } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { RoleBadge } from '@/components/RoleBadge';
@@ -91,6 +91,7 @@ export default function AdminDashboard() {
   const [staffList, setStaffList] = useState<Profile[]>([]);
   const [userEmails, setUserEmails] = useState<Record<string, string>>({});
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
+  const [auditLogs, setAuditLogs] = useState<{ id: string; user_id: string; ip_address: string | null; user_agent: string | null; login_at: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingUser, setDeletingUser] = useState<string | null>(null);
   const [savingFreeze, setSavingFreeze] = useState<string | null>(null);
@@ -98,14 +99,16 @@ export default function AdminDashboard() {
   const roleMap = useUserRoles();
 
   const fetchAll = async () => {
-    const [dealRes, staffRes, logRes] = await Promise.all([
+    const [dealRes, staffRes, logRes, auditRes] = await Promise.all([
       supabase.from('deals').select('*, assigned_profile:profiles!deals_assigned_to_fkey(full_name), profiles!deals_client_id_fkey(full_name)'),
       supabase.from('profiles').select('id, full_name, phone_number, currency_preference, frozen_actions'),
       supabase.from('activity_logs').select('*, profile:profiles!activity_logs_user_id_fkey(full_name), deal:deals!activity_logs_deal_id_fkey(title, deal_number)').order('created_at', { ascending: false }).limit(30),
+      supabase.from('login_audit_logs').select('*').order('login_at', { ascending: false }).limit(20),
     ]);
     setDeals((dealRes.data as any) || []);
     setStaffList((staffRes.data as any) || []);
     setActivityLogs((logRes.data as any) || []);
+    setAuditLogs((auditRes.data as any) || []);
     setLoading(false);
   };
 
@@ -578,6 +581,64 @@ export default function AdminDashboard() {
               </tbody>
             </table>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Security Intelligence — Login Audit Trail */}
+      <Card className="shadow-card">
+        <CardHeader>
+          <CardTitle className="font-display flex items-center gap-2 text-base sm:text-lg">
+            <Fingerprint className="h-5 w-5 text-primary" />Security Intelligence — Login Audit Trail
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {auditLogs.length === 0 ? (
+            <p className="text-muted-foreground text-center py-8">No login activity recorded yet</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-2 px-2 sm:px-3 text-muted-foreground font-medium text-xs">User</th>
+                    <th className="text-left py-2 px-2 sm:px-3 text-muted-foreground font-medium text-xs hidden md:table-cell">Device / Browser</th>
+                    <th className="text-left py-2 px-2 sm:px-3 text-muted-foreground font-medium text-xs">Login Time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {auditLogs.map((log) => {
+                    const profile = staffList.find(s => s.id === log.user_id);
+                    const ua = log.user_agent || '';
+                    const browser = ua.match(/(Chrome|Firefox|Safari|Edge|Opera)\/[\d.]+/)?.[0] || 'Unknown';
+                    const os = ua.match(/(Windows|Mac OS X|Linux|Android|iOS)[\s\d._]*/)?.[0]?.trim() || '';
+                    return (
+                      <tr key={log.id} className="border-b border-border/50 hover:bg-muted/30">
+                        <td className="py-2 px-2 sm:px-3">
+                          <div className="flex items-center gap-2">
+                            <div className="h-7 w-7 rounded-full gradient-primary flex items-center justify-center shrink-0">
+                              <span className="text-[10px] font-bold text-primary-foreground">{profile?.full_name?.charAt(0)?.toUpperCase() || '?'}</span>
+                            </div>
+                            <div className="min-w-0">
+                              <span className="font-medium text-foreground text-xs sm:text-sm block truncate">{profile?.full_name || 'Unknown'}</span>
+                              {roleMap[log.user_id] && <RoleBadge role={roleMap[log.user_id]} />}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-2 px-2 sm:px-3 hidden md:table-cell">
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <Monitor className="h-3 w-3 shrink-0" />
+                            <span className="truncate max-w-[250px]">{browser}{os ? ` · ${os}` : ''}</span>
+                          </div>
+                        </td>
+                        <td className="py-2 px-2 sm:px-3 text-xs text-muted-foreground">
+                          {new Date(log.login_at).toLocaleString()}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </motion.div>

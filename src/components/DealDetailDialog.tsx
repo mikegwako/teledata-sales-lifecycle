@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { RoleBadge } from '@/components/RoleBadge';
@@ -154,6 +155,8 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
   const [showMentions, setShowMentions] = useState(false);
   const [mentionQuery, setMentionQuery] = useState('');
   const commentInputRef = useRef<HTMLInputElement>(null);
+  const [taxPresets, setTaxPresets] = useState<{ id: string; region_name: string; country_code: string; taxes: { name: string; rate: number }[] }[]>([]);
+  const [selectedTaxPreset, setSelectedTaxPreset] = useState<string>('');
 
   const frozenActions = profile?.frozen_actions || [];
   const canComment = !frozenActions.includes('comment');
@@ -167,8 +170,17 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
       fetchDocuments();
       fetchActivityLogs();
       fetchProfiles();
+      fetchTaxPresets();
     }
   }, [deal?.id, open]);
+
+  const fetchTaxPresets = async () => {
+    const { data } = await supabase.from('tax_presets').select('*').order('is_default', { ascending: false });
+    const presets = (data as any) || [];
+    setTaxPresets(presets.map((p: any) => ({ ...p, taxes: typeof p.taxes === 'string' ? JSON.parse(p.taxes) : p.taxes })));
+    const defaultPreset = presets.find((p: any) => p.is_default);
+    if (defaultPreset && !selectedTaxPreset) setSelectedTaxPreset(defaultPreset.id);
+  };
 
   const fetchProfiles = async () => {
     const { data } = await supabase.from('profiles').select('id, full_name');
@@ -459,7 +471,7 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
                 <Input type="number" value={costEdit} onChange={(e) => setCostEdit(e.target.value)} disabled={!canEditFinancials} className="font-mono" />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Profit</Label>
+                <Label className="text-xs">Profit (before tax)</Label>
                 <div className={`h-10 flex items-center px-3 rounded-md border border-input font-mono text-sm ${profit >= 0 ? 'text-success' : 'text-destructive'}`}>
                   {formatCurrency(profit)}
                 </div>
@@ -468,6 +480,58 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
             {canEditFinancials && (
               <Button size="sm" onClick={handleSaveFinancials} className="gradient-primary text-primary-foreground">Save Financials</Button>
             )}
+
+            {/* Tax Compliance Calculator */}
+            <Separator />
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tax Compliance Calculator</Label>
+                <Select value={selectedTaxPreset} onValueChange={setSelectedTaxPreset}>
+                  <SelectTrigger className="h-7 w-[160px] text-xs">
+                    <SelectValue placeholder="Select region" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {taxPresets.map(tp => (
+                      <SelectItem key={tp.id} value={tp.id}>
+                        <span className="flex items-center gap-1.5">{tp.country_code} — {tp.region_name}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {(() => {
+                const preset = taxPresets.find(tp => tp.id === selectedTaxPreset);
+                if (!preset) return <p className="text-xs text-muted-foreground">Select a tax region above</p>;
+                const dealValue = parseFloat(valueEdit) || 0;
+                let totalTaxRate = 0;
+                const taxLines = preset.taxes.map(t => {
+                  totalTaxRate += t.rate;
+                  const amount = dealValue * (t.rate / 100);
+                  return { ...t, amount };
+                });
+                const totalTax = dealValue * (totalTaxRate / 100);
+                const netProfit = profit - totalTax;
+                return (
+                  <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
+                    {taxLines.map((t, i) => (
+                      <div key={i} className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">{t.name} ({t.rate}%)</span>
+                        <span className="font-mono text-foreground">{formatCurrency(t.amount)}</span>
+                      </div>
+                    ))}
+                    <Separator />
+                    <div className="flex items-center justify-between text-xs font-semibold">
+                      <span className="text-muted-foreground">Total Tax ({totalTaxRate}%)</span>
+                      <span className="font-mono text-destructive">{formatCurrency(totalTax)}</span>
+                    </div>
+                    <div className={`flex items-center justify-between text-sm font-bold pt-1`}>
+                      <span className="text-foreground">Net Profit (after tax)</span>
+                      <span className={`font-mono ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>{formatCurrency(netProfit)}</span>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
           </TabsContent>
 
           {/* Comments */}
