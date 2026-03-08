@@ -396,7 +396,7 @@ export default function AdminDashboard() {
               <tbody>
                 {staffList.map((person) => {
                   const userRole = roleMap[person.id] || 'client';
-                  const dealCount = deals.filter((d) => d.assigned_to === person.id || d.client_id === person.id).length;
+                  const dealCount = deals.filter((d) => d.assigned_to === person.id || (d as any).client_id === person.id).length;
                   return (
                     <tr key={person.id} className="border-b border-border/50 hover:bg-muted/30">
                       <td className="py-2 px-2 sm:px-3">
