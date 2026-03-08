@@ -37,6 +37,7 @@ export default function ProfileSettings({ open, onOpenChange }: ProfileSettingsP
       setCurrency(profile.currency_preference || 'USD');
       setAutoDelete(!!profile.auto_delete_days);
       setAvatarPreview(profile.avatar_url || null);
+      setAvatarPosition(profile.avatar_position || 'center');
     }
   }, [profile, open]);
 
