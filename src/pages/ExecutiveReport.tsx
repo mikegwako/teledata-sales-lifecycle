@@ -7,6 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { Loader2, Download, TrendingUp, AlertTriangle, Users, DollarSign, FileText, Activity } from 'lucide-react';
 import { RoleBadge } from '@/components/RoleBadge';
 import { useUserRoles } from '@/hooks/useUserRoles';
+import { useCurrency } from '@/hooks/useCurrency';
 import teledataLogo from '@/assets/teledata-logo.jpeg';
 
 interface Deal {
@@ -34,6 +35,7 @@ export default function ExecutiveReport() {
   const [docCounts, setDocCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const roleMap = useUserRoles();
+  const { formatCurrency } = useCurrency();
   const reportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { fetchData(); }, []);
@@ -115,9 +117,9 @@ export default function ExecutiveReport() {
         {/* KPI Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {[
-            { label: 'Active Pipeline', value: `$${totalPipelineValue.toLocaleString()}`, icon: TrendingUp, sub: `${inProgressDeals.length} deals in progress`, color: 'text-primary' },
-            { label: 'Total Revenue', value: `$${totalRevenue.toLocaleString()}`, icon: DollarSign, sub: `${profitMargin}% margin`, color: 'text-success' },
-            { label: 'Net Profit', value: `$${profit.toLocaleString()}`, icon: DollarSign, sub: `Cost: $${totalCost.toLocaleString()}`, color: profit >= 0 ? 'text-success' : 'text-destructive' },
+            { label: 'Active Pipeline', value: formatCurrency(totalPipelineValue), icon: TrendingUp, sub: `${inProgressDeals.length} deals in progress`, color: 'text-primary' },
+            { label: 'Total Revenue', value: formatCurrency(totalRevenue), icon: DollarSign, sub: `${profitMargin}% margin`, color: 'text-success' },
+            { label: 'Net Profit', value: formatCurrency(profit), icon: DollarSign, sub: `Cost: ${formatCurrency(totalCost)}`, color: profit >= 0 ? 'text-success' : 'text-destructive' },
             { label: 'Win Rate', value: `${winRate}%`, icon: Activity, sub: `${completedDeals.length} of ${deals.length} completed`, color: 'text-accent' },
           ].map((m) => (
             <Card key={m.label} className="shadow-card print:shadow-none print:border">
@@ -146,7 +148,7 @@ export default function ExecutiveReport() {
           </CardHeader>
           <CardContent>
             <div className="flex items-baseline gap-3">
-              <span className="text-3xl font-bold font-display text-foreground">${recentValue.toLocaleString()}</span>
+              <span className="text-3xl font-bold font-display text-foreground">{formatCurrency(recentValue)}</span>
               <span className="text-sm text-muted-foreground">across {recentDeals.length} new deal{recentDeals.length !== 1 ? 's' : ''}</span>
             </div>
           </CardContent>
@@ -176,7 +178,7 @@ export default function ExecutiveReport() {
                         • {deal.status}
                       </p>
                     </div>
-                    <span className="font-mono font-bold text-primary text-sm shrink-0">${Number(deal.value || 0).toLocaleString()}</span>
+                    <span className="font-mono font-bold text-primary text-sm shrink-0">{formatCurrency(Number(deal.value || 0))}</span>
                   </div>
                 ))}
               </div>

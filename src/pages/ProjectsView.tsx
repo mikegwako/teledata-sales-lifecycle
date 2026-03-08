@@ -6,13 +6,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, MessageSquare, Send, Pencil, Save, X, FolderOpen, Plus, User, Paperclip, Upload, Download, FileText, Image as ImageIcon, Trash2 } from 'lucide-react';
+import { Loader2, MessageSquare, Send, Pencil, Save, X, FolderOpen, Plus, User, Paperclip, Upload, Download, FileText, Image as ImageIcon, Trash2, ShieldAlert } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { Label } from '@/components/ui/label';
 import { ServiceTypeCombobox } from '@/components/ServiceTypeCombobox';
 import { RoleBadge } from '@/components/RoleBadge';
 import { useUserRoles } from '@/hooks/useUserRoles';
+import { useCurrency } from '@/hooks/useCurrency';
 
 interface Comment {
   id: string;
@@ -61,10 +62,11 @@ const stageColors: Record<string, string> = {
 };
 
 export default function ProjectsView() {
-  const { user, role } = useAuth();
+  const { user, role, profile } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const roleMap = useUserRoles();
+  const { formatCurrency } = useCurrency();
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
   const [comments, setComments] = useState<Record<string, Comment[]>>({});
@@ -121,9 +123,17 @@ export default function ProjectsView() {
     }
   };
 
+  const frozenActions = profile?.frozen_actions || [];
+  const canComment = !frozenActions.includes('comment');
+  const canUpload = !frozenActions.includes('upload');
+
   const handleComment = async (dealId: string) => {
     const content = newComment[dealId]?.trim();
     if (!content || !user) return;
+    if (!canComment) {
+      toast({ title: 'Action restricted', description: 'Your commenting privileges have been suspended.', variant: 'destructive' });
+      return;
+    }
     const { error } = await supabase.from('comments').insert({ deal_id: dealId, user_id: user.id, content });
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -145,6 +155,10 @@ export default function ProjectsView() {
 
   const handleFileUpload = async (dealId: string, e: React.ChangeEvent<HTMLInputElement>) => {
     if (!user || !e.target.files?.length) return;
+    if (!canUpload) {
+      toast({ title: 'Action restricted', description: 'Your upload privileges have been suspended.', variant: 'destructive' });
+      return;
+    }
     setUploading((prev) => ({ ...prev, [dealId]: true }));
     const file = e.target.files[0];
     const path = `${dealId}/${Date.now()}_${file.name}`;
@@ -277,7 +291,7 @@ export default function ProjectsView() {
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <Badge className={stageColors[deal.status]}>{deal.status}</Badge>
-                    {deal.value > 0 && <Badge variant="outline" className="font-mono">${Number(deal.value).toLocaleString()}</Badge>}
+                    {deal.value > 0 && <Badge variant="outline" className="font-mono">{formatCurrency(Number(deal.value))}</Badge>}
                     {deal.assigned_profile && (
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <div className="h-6 w-6 rounded-full gradient-accent flex items-center justify-center">

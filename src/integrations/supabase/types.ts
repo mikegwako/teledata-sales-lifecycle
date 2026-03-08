@@ -185,20 +185,29 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string | null
+          currency_preference: string
+          frozen_actions: string[]
           full_name: string | null
           id: string
+          phone_number: string | null
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
+          currency_preference?: string
+          frozen_actions?: string[]
           full_name?: string | null
           id: string
+          phone_number?: string | null
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
+          currency_preference?: string
+          frozen_actions?: string[]
           full_name?: string | null
           id?: string
+          phone_number?: string | null
           updated_at?: string | null
         }
         Relationships: []

@@ -11,9 +11,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { RoleBadge } from '@/components/RoleBadge';
 import { useUserRoles } from '@/hooks/useUserRoles';
+import { useCurrency } from '@/hooks/useCurrency';
 import {
   Send, Upload, FileText, Image as ImageIcon, Trash2, Download,
-  DollarSign, User, Calendar, Loader2, MessageSquare, Paperclip, Clock,
+  DollarSign, User, Calendar, Loader2, MessageSquare, Paperclip, Clock, ShieldAlert,
 } from 'lucide-react';
 
 interface Comment {
@@ -111,10 +112,11 @@ function groupActivityLogs(logs: ActivityLog[]) {
 }
 
 export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdated }: DealDetailDialogProps) {
-  const { user, role } = useAuth();
+  const { user, role, profile } = useAuth();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const roleMap = useUserRoles();
+  const { formatCurrency, currencyLabel } = useCurrency();
 
   const [comments, setComments] = useState<Comment[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -126,6 +128,10 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
   const [loadingComments, setLoadingComments] = useState(false);
   const [loadingDocs, setLoadingDocs] = useState(false);
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
+
+  const frozenActions = profile?.frozen_actions || [];
+  const canComment = !frozenActions.includes('comment');
+  const canUpload = !frozenActions.includes('upload');
 
   useEffect(() => {
     if (deal && open) {
@@ -179,6 +185,10 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
 
   const handleComment = async () => {
     if (!deal || !user || !newComment.trim()) return;
+    if (!canComment) {
+      toast({ title: 'Action restricted', description: 'Your commenting privileges have been suspended by an admin.', variant: 'destructive' });
+      return;
+    }
     const { error } = await supabase.from('comments').insert({
       deal_id: deal.id, user_id: user.id, content: newComment.trim(),
     });
@@ -216,6 +226,10 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!deal || !user || !e.target.files?.length) return;
+    if (!canUpload) {
+      toast({ title: 'Action restricted', description: 'Your upload privileges have been suspended by an admin.', variant: 'destructive' });
+      return;
+    }
     setUploading(true);
     const file = e.target.files[0];
     const path = `${deal.id}/${Date.now()}_${file.name}`;
@@ -336,7 +350,7 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
         <Tabs defaultValue="comments" className="w-full">
           <TabsList className="w-full grid grid-cols-4">
             <TabsTrigger value="financials" className="text-[10px] sm:text-xs">
-              <DollarSign className="h-3 w-3 mr-0.5 sm:mr-1" /><span className="hidden sm:inline">Financials</span><span className="sm:hidden">$</span>
+              <DollarSign className="h-3 w-3 mr-0.5 sm:mr-1" /><span className="hidden sm:inline">Financials</span><span className="sm:hidden">{currencyLabel}</span>
             </TabsTrigger>
             <TabsTrigger value="comments" className="text-[10px] sm:text-xs">
               <MessageSquare className="h-3 w-3 mr-0.5 sm:mr-1" />
@@ -357,17 +371,17 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
           <TabsContent value="financials" className="space-y-4 mt-4">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-1.5">
-                <Label className="text-xs">Deal Value ($)</Label>
+                <Label className="text-xs">Deal Value ({currencyLabel})</Label>
                 <Input type="number" value={valueEdit} onChange={(e) => setValueEdit(e.target.value)} disabled={!canEditFinancials} className="font-mono" />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Cost ($)</Label>
+                <Label className="text-xs">Cost ({currencyLabel})</Label>
                 <Input type="number" value={costEdit} onChange={(e) => setCostEdit(e.target.value)} disabled={!canEditFinancials} className="font-mono" />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Profit</Label>
                 <div className={`h-10 flex items-center px-3 rounded-md border border-input font-mono text-sm ${profit >= 0 ? 'text-success' : 'text-destructive'}`}>
-                  ${profit.toLocaleString()}
+                  {formatCurrency(profit)}
                 </div>
               </div>
             </div>
@@ -418,15 +432,22 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
                 })}
               </div>
             )}
+            {!canComment && (
+              <div className="flex items-center gap-2 text-xs text-destructive bg-destructive/10 rounded-lg p-2 mt-3">
+                <ShieldAlert className="h-4 w-4 shrink-0" />
+                Your commenting privileges have been suspended.
+              </div>
+            )}
             <div className="flex gap-2 mt-3">
               <Input
-                placeholder="Write a comment..."
+                placeholder={canComment ? 'Write a comment...' : 'Commenting disabled'}
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleComment()}
                 className="text-sm"
+                disabled={!canComment}
               />
-              <Button size="icon" className="shrink-0 gradient-primary text-primary-foreground" onClick={handleComment} disabled={!newComment.trim()}>
+              <Button size="icon" className="shrink-0 gradient-primary text-primary-foreground" onClick={handleComment} disabled={!newComment.trim() || !canComment}>
                 <Send className="h-4 w-4" />
               </Button>
             </div>
@@ -435,7 +456,13 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
           {/* Documents */}
           <TabsContent value="documents" className="mt-4">
             <input ref={fileInputRef} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.xls,.xlsx" onChange={handleFileUpload} />
-            <Button variant="outline" size="sm" className="w-full mb-3 border-dashed" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+            {!canUpload && (
+              <div className="flex items-center gap-2 text-xs text-destructive bg-destructive/10 rounded-lg p-2 mb-3">
+                <ShieldAlert className="h-4 w-4 shrink-0" />
+                Your upload privileges have been suspended.
+              </div>
+            )}
+            <Button variant="outline" size="sm" className="w-full mb-3 border-dashed" onClick={() => fileInputRef.current?.click()} disabled={uploading || !canUpload}>
               {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
               {uploading ? 'Uploading...' : 'Upload Document'}
             </Button>

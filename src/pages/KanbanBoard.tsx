@@ -17,6 +17,7 @@ import DealDetailDialog from '@/components/DealDetailDialog';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { RoleBadge } from '@/components/RoleBadge';
 import { useUserRoles } from '@/hooks/useUserRoles';
+import { useCurrency } from '@/hooks/useCurrency';
 
 interface Deal {
   id: string;
@@ -50,6 +51,7 @@ export default function KanbanBoard() {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const roleMap = useUserRoles();
+  const { formatCurrency } = useCurrency();
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
   const [newDealOpen, setNewDealOpen] = useState(false);
@@ -174,7 +176,7 @@ export default function KanbanBoard() {
               <div className="space-y-4">
                 <div><Label>Title</Label><Input value={newDeal.title} onChange={(e) => setNewDeal({ ...newDeal, title: e.target.value })} placeholder="Deal title" /></div>
                 <div><Label>Service Type</Label><ServiceTypeCombobox value={newDeal.service_type} onChange={(v) => setNewDeal({ ...newDeal, service_type: v })} /></div>
-                <div><Label>Value ($)</Label><Input type="number" value={newDeal.value} onChange={(e) => setNewDeal({ ...newDeal, value: e.target.value })} placeholder="0" /></div>
+                <div><Label>Value ({formatCurrency(0).replace('0', '').trim()})</Label><Input type="number" value={newDeal.value} onChange={(e) => setNewDeal({ ...newDeal, value: e.target.value })} placeholder="0" /></div>
                 <div><Label>Description</Label><Textarea value={newDeal.description} onChange={(e) => setNewDeal({ ...newDeal, description: e.target.value })} rows={3} /></div>
                 <Button className="w-full gradient-primary text-primary-foreground" onClick={handleNewDeal} disabled={!newDeal.title}>Create Deal</Button>
               </div>
@@ -205,7 +207,7 @@ export default function KanbanBoard() {
             >
               <p className="text-[10px] uppercase tracking-wider">{col.slice(0, 4)}</p>
               <p className="text-sm sm:text-lg font-bold font-display">{count}</p>
-              {total > 0 && <p className="text-[10px] font-mono">${(total / 1000).toFixed(0)}k</p>}
+              {total > 0 && <p className="text-[10px] font-mono">{formatCurrency(total)}</p>}
             </button>
           );
         })}
@@ -246,7 +248,7 @@ export default function KanbanBoard() {
                                   <p className="text-sm font-semibold text-foreground truncate">{deal.title}</p>
                                   <p className="text-[10px] font-mono text-primary/60 mt-0.5">TD-{1000 + (deal.deal_number || 0)}</p>
                                   {deal.service_type && <p className="text-[10px] text-muted-foreground truncate mt-0.5">{deal.service_type}</p>}
-                                  {deal.value > 0 && <p className="text-xs font-mono font-semibold text-primary mt-1.5">${Number(deal.value).toLocaleString()}</p>}
+                                  {deal.value > 0 && <p className="text-xs font-mono font-semibold text-primary mt-1.5">{formatCurrency(Number(deal.value))}</p>}
                                   {deal.assigned_profile ? (
                                     <div className="flex items-center gap-1.5 mt-2">
                                       <div className="h-5 w-5 rounded-full gradient-accent flex items-center justify-center">
