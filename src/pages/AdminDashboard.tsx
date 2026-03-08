@@ -8,6 +8,7 @@ import { Loader2, TrendingUp, FolderOpen, Target, DollarSign, Activity, Users, A
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { RoleBadge } from '@/components/RoleBadge';
+import { UserAvatar } from '@/components/UserAvatar';
 import { useUserRoles } from '@/hooks/useUserRoles';
 import { useCurrency } from '@/hooks/useCurrency';
 import { useToast } from '@/hooks/use-toast';
