@@ -13,7 +13,7 @@ import {
   SidebarFooter,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { LayoutDashboard, KanbanSquare, FilePlus, FolderOpen, LogOut, ChevronLeft } from 'lucide-react';
+import { LayoutDashboard, KanbanSquare, FilePlus, FolderOpen, LogOut, ChevronLeft, FileBarChart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export function AppSidebar() {
@@ -28,6 +28,7 @@ export function AppSidebar() {
       { title: 'Command Center', url: '/', icon: LayoutDashboard },
       { title: 'Deal Pipeline', url: '/pipeline', icon: KanbanSquare },
       { title: 'All Projects', url: '/projects', icon: FolderOpen },
+      { title: 'Executive Report', url: '/report', icon: FileBarChart },
     );
   }
 

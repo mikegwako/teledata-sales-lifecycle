@@ -7,13 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Trash2, GripVertical, HandMetal, Plus, DollarSign, MessageSquarePlus } from 'lucide-react';
+import { Loader2, Trash2, GripVertical, HandMetal, Plus, DollarSign } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import confetti from 'canvas-confetti';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ServiceTypeCombobox } from '@/components/ServiceTypeCombobox';
 import DealDetailDialog from '@/components/DealDetailDialog';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface Deal {
   id: string;
@@ -45,12 +46,14 @@ const columnColors: Record<string, string> = {
 export default function KanbanBoard() {
   const { user, role } = useAuth();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
   const [newDealOpen, setNewDealOpen] = useState(false);
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [newDeal, setNewDeal] = useState({ title: '', service_type: '', description: '', value: '' });
+  const [mobileFilter, setMobileFilter] = useState<string | null>(null);
 
   const fetchDeals = async () => {
     const { data, error } = await supabase
@@ -146,19 +149,21 @@ export default function KanbanBoard() {
     );
   }
 
+  const visibleColumns = isMobile && mobileFilter ? [mobileFilter] : COLUMNS;
+
   return (
     <div className="animate-fade-in">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold font-display text-foreground">Deal Pipeline</h1>
-          <p className="text-muted-foreground mt-1">Click any card for full details • Drag to update stage</p>
+          <h1 className="text-xl sm:text-2xl font-bold font-display text-foreground">Deal Pipeline</h1>
+          <p className="text-muted-foreground text-sm mt-1">Click any card for full details • Drag to update stage</p>
         </div>
         {(role === 'staff' || role === 'admin') && (
           <Dialog open={newDealOpen} onOpenChange={setNewDealOpen}>
             <DialogTrigger asChild>
-              <Button className="gradient-primary text-primary-foreground"><Plus className="mr-2 h-4 w-4" />New Deal</Button>
+              <Button className="gradient-primary text-primary-foreground w-full sm:w-auto"><Plus className="mr-2 h-4 w-4" />New Deal</Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="sm:max-w-md w-[95vw]">
               <DialogHeader><DialogTitle className="font-display">Create New Deal</DialogTitle></DialogHeader>
               <div className="space-y-4">
                 <div><Label>Title</Label><Input value={newDeal.title} onChange={(e) => setNewDeal({ ...newDeal, title: e.target.value })} placeholder="Deal title" /></div>
@@ -172,24 +177,37 @@ export default function KanbanBoard() {
         )}
       </div>
 
-      {/* Pipeline summary */}
-      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-4">
+      {/* Pipeline summary - scrollable on mobile */}
+      <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+        {isMobile && (
+          <button
+            onClick={() => setMobileFilter(null)}
+            className={`shrink-0 rounded-lg border border-border px-3 py-1.5 text-center ${!mobileFilter ? 'bg-primary text-primary-foreground' : 'bg-card'}`}
+          >
+            <p className="text-[10px] uppercase tracking-wider">All</p>
+            <p className="text-sm font-bold font-display">{deals.length}</p>
+          </button>
+        )}
         {COLUMNS.map((col) => {
           const count = deals.filter((d) => d.status === col).length;
           const total = deals.filter((d) => d.status === col).reduce((s, d) => s + Number(d.value || 0), 0);
           return (
-            <div key={col} className="rounded-lg border border-border p-2 text-center bg-card">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{col}</p>
-              <p className="text-lg font-bold font-display text-foreground">{count}</p>
-              {total > 0 && <p className="text-[10px] font-mono text-primary">${total.toLocaleString()}</p>}
-            </div>
+            <button
+              key={col}
+              onClick={() => isMobile && setMobileFilter(mobileFilter === col ? null : col)}
+              className={`shrink-0 flex-1 min-w-[80px] sm:min-w-0 rounded-lg border border-border p-1.5 sm:p-2 text-center transition-colors ${isMobile && mobileFilter === col ? 'bg-primary text-primary-foreground' : 'bg-card'}`}
+            >
+              <p className="text-[10px] uppercase tracking-wider">{col.slice(0, 4)}</p>
+              <p className="text-sm sm:text-lg font-bold font-display">{count}</p>
+              {total > 0 && <p className="text-[10px] font-mono">${(total / 1000).toFixed(0)}k</p>}
+            </button>
           );
         })}
       </div>
 
       <DragDropContext onDragEnd={onDragEnd}>
-        <div className="grid grid-cols-6 gap-3 min-w-[900px] overflow-x-auto">
-          {COLUMNS.map((col) => {
+        <div className={`grid gap-3 ${isMobile ? 'grid-cols-1' : 'grid-cols-6 min-w-[900px]'} overflow-x-auto`}>
+          {visibleColumns.map((col) => {
             const colDeals = deals.filter((d) => d.status === col);
             return (
               <Droppable droppableId={col} key={col}>
@@ -197,7 +215,7 @@ export default function KanbanBoard() {
                   <div
                     ref={provided.innerRef}
                     {...provided.droppableProps}
-                    className={`rounded-xl border-t-4 ${columnColors[col]} bg-muted/20 p-2 min-h-[500px] transition-colors ${snapshot.isDraggingOver ? 'bg-primary/5 ring-2 ring-primary/20' : ''}`}
+                    className={`rounded-xl border-t-4 ${columnColors[col]} bg-muted/20 p-2 ${isMobile ? 'min-h-[200px]' : 'min-h-[500px]'} transition-colors ${snapshot.isDraggingOver ? 'bg-primary/5 ring-2 ring-primary/20' : ''}`}
                   >
                     <div className="flex items-center justify-between mb-3 px-1">
                       <h3 className="text-[11px] font-semibold text-foreground uppercase tracking-wider">{col}</h3>
@@ -221,12 +239,8 @@ export default function KanbanBoard() {
                                 <div className="flex-1 min-w-0">
                                   <p className="text-sm font-semibold text-foreground truncate">{deal.title}</p>
                                   <p className="text-[10px] font-mono text-primary/60 mt-0.5">TD-{1000 + (deal.deal_number || 0)}</p>
-                                  {deal.service_type && (
-                                    <p className="text-[10px] text-muted-foreground truncate mt-0.5">{deal.service_type}</p>
-                                  )}
-                                  {deal.value > 0 && (
-                                    <p className="text-xs font-mono font-semibold text-primary mt-1.5">${Number(deal.value).toLocaleString()}</p>
-                                  )}
+                                  {deal.service_type && <p className="text-[10px] text-muted-foreground truncate mt-0.5">{deal.service_type}</p>}
+                                  {deal.value > 0 && <p className="text-xs font-mono font-semibold text-primary mt-1.5">${Number(deal.value).toLocaleString()}</p>}
                                   {deal.assigned_profile ? (
                                     <div className="flex items-center gap-1.5 mt-2">
                                       <div className="h-5 w-5 rounded-full gradient-accent flex items-center justify-center">
@@ -262,12 +276,7 @@ export default function KanbanBoard() {
         </div>
       </DragDropContext>
 
-      <DealDetailDialog
-        deal={selectedDeal}
-        open={detailOpen}
-        onOpenChange={setDetailOpen}
-        onDealUpdated={fetchDeals}
-      />
+      <DealDetailDialog deal={selectedDeal} open={detailOpen} onOpenChange={setDetailOpen} onDealUpdated={fetchDeals} />
     </div>
   );
 }

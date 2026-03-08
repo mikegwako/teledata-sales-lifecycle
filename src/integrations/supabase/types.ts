@@ -141,6 +141,47 @@ export type Database = {
           },
         ]
       }
+      documents: {
+        Row: {
+          content_type: string | null
+          created_at: string | null
+          deal_id: string
+          file_name: string
+          file_size: number | null
+          id: string
+          storage_path: string
+          uploaded_by: string
+        }
+        Insert: {
+          content_type?: string | null
+          created_at?: string | null
+          deal_id: string
+          file_name: string
+          file_size?: number | null
+          id?: string
+          storage_path: string
+          uploaded_by: string
+        }
+        Update: {
+          content_type?: string | null
+          created_at?: string | null
+          deal_id?: string
+          file_name?: string
+          file_size?: number | null
+          id?: string
+          storage_path?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string | null
