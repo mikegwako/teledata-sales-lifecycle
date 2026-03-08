@@ -151,12 +151,6 @@ export function AppSidebar() {
                 <h2 className="font-display font-bold text-sm text-sidebar-primary-foreground">Teledata Africa</h2>
                 <p className="text-xs text-sidebar-foreground/60">Sales Engine</p>
               </div>
-            )}
-            {!collapsed && (
-              <Button variant="ghost" size="icon" className="ml-auto h-7 w-7 text-sidebar-foreground/60 hover:text-sidebar-foreground" onClick={toggleSidebar}>
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-            )}
           </div>
         </SidebarFooter>
       </Sidebar>
