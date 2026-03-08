@@ -28,6 +28,8 @@ interface StaffActivity {
   user_id: string;
   count: number;
   name: string;
+  avatar_url: string | null;
+  avatar_position: string;
 }
 
 export default function ExecutiveReport() {
