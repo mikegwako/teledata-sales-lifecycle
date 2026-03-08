@@ -4,15 +4,23 @@ import { supabase } from '@/lib/supabase';
 
 export type AppRole = 'admin' | 'staff' | 'client';
 
+export interface UserProfile {
+  full_name: string;
+  phone_number: string | null;
+  currency_preference: string;
+  frozen_actions: string[];
+}
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   role: AppRole;
-  profile: { full_name: string } | null;
+  profile: UserProfile | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName: string) => Promise<void>;
+  signUp: (email: string, password: string, fullName: string, phoneNumber?: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -21,16 +29,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<AppRole>('client');
-  const [profile, setProfile] = useState<{ full_name: string } | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchUserData = async (userId: string) => {
     const [{ data: roleData }, { data: profileData }] = await Promise.all([
       supabase.from('user_roles').select('role').eq('user_id', userId).single(),
-      supabase.from('profiles').select('full_name').eq('id', userId).single(),
+      supabase.from('profiles').select('full_name, phone_number, currency_preference, frozen_actions').eq('id', userId).single(),
     ]);
     if (roleData) setRole(roleData.role as AppRole);
-    if (profileData) setProfile(profileData);
+    if (profileData) setProfile(profileData as unknown as UserProfile);
+  };
+
+  const refreshProfile = async () => {
+    if (user) await fetchUserData(user.id);
   };
 
   useEffect(() => {
@@ -60,11 +72,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, fullName: string) => {
+  const signUp = async (email: string, password: string, fullName: string, phoneNumber?: string) => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName }, emailRedirectTo: window.location.origin },
+      options: {
+        data: { full_name: fullName, phone_number: phoneNumber || '' },
+        emailRedirectTo: window.location.origin,
+      },
     });
     if (error) throw error;
   };
@@ -83,7 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, role, profile, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, session, role, profile, loading, signUp, signIn, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );
