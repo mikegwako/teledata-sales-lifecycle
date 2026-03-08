@@ -584,9 +584,7 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
                                       const rRole = roleMap[uid];
                                       return (
                                         <div key={uid} className="flex items-center gap-2 text-xs">
-                                          <div className="h-5 w-5 rounded-full gradient-primary flex items-center justify-center shrink-0">
-                                            <span className="text-[8px] font-bold text-primary-foreground">{p?.full_name?.charAt(0)?.toUpperCase() || '?'}</span>
-                                          </div>
+                                          <UserAvatar fullName={p?.full_name} avatarUrl={p?.avatar_url} avatarPosition={p?.avatar_position} className="h-5 w-5" fallbackClassName="text-[8px]" />
                                           <span className="text-foreground truncate">{p?.full_name || 'User'}</span>
                                           {rRole && <RoleBadge role={rRole} />}
                                         </div>
