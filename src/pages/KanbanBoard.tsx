@@ -248,7 +248,7 @@ export default function KanbanBoard() {
                                   <p className="text-sm font-semibold text-foreground truncate">{deal.title}</p>
                                   <p className="text-[10px] font-mono text-primary/60 mt-0.5">TD-{1000 + (deal.deal_number || 0)}</p>
                                   {deal.service_type && <p className="text-[10px] text-muted-foreground truncate mt-0.5">{deal.service_type}</p>}
-                                  {deal.value > 0 && <p className="text-xs font-mono font-semibold text-primary mt-1.5">${Number(deal.value).toLocaleString()}</p>}
+                                  {deal.value > 0 && <p className="text-xs font-mono font-semibold text-primary mt-1.5">{formatCurrency(Number(deal.value))}</p>}
                                   {deal.assigned_profile ? (
                                     <div className="flex items-center gap-1.5 mt-2">
                                       <div className="h-5 w-5 rounded-full gradient-accent flex items-center justify-center">
