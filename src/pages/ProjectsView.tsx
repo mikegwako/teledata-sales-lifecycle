@@ -62,7 +62,7 @@ const stageColors: Record<string, string> = {
 };
 
 export default function ProjectsView() {
-  const { user, role } = useAuth();
+  const { user, role, profile } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const roleMap = useUserRoles();
