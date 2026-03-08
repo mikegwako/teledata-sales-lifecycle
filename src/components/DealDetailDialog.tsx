@@ -217,7 +217,7 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
     setLoadingComments(true);
     const { data, error } = await supabase
       .from('comments')
-      .select('*, profile:profiles!comments_user_id_fkey(full_name)')
+      .select('*, profile:profiles!comments_user_id_fkey(full_name, avatar_url, avatar_position)')
       .eq('deal_id', deal.id)
       .order('created_at', { ascending: true });
     if (error) {
