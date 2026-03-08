@@ -91,7 +91,7 @@ export default function AdminDashboard() {
   const [staffList, setStaffList] = useState<Profile[]>([]);
   const [userEmails, setUserEmails] = useState<Record<string, string>>({});
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
-  const [auditLogs, setAuditLogs] = useState<{ id: string; user_id: string; ip_address: string | null; user_agent: string | null; login_at: string }[]>([]);
+  const [auditLogs, setAuditLogs] = useState<{ id: string; user_id: string; ip_address: string | null; user_agent: string | null; login_at: string; city: string | null; country: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingUser, setDeletingUser] = useState<string | null>(null);
   const [savingFreeze, setSavingFreeze] = useState<string | null>(null);
@@ -600,8 +600,9 @@ export default function AdminDashboard() {
                 <thead>
                   <tr className="border-b border-border">
                     <th className="text-left py-2 px-2 sm:px-3 text-muted-foreground font-medium text-xs">User</th>
-                    <th className="text-left py-2 px-2 sm:px-3 text-muted-foreground font-medium text-xs hidden md:table-cell">Device / Browser</th>
-                    <th className="text-left py-2 px-2 sm:px-3 text-muted-foreground font-medium text-xs">Login Time</th>
+                     <th className="text-left py-2 px-2 sm:px-3 text-muted-foreground font-medium text-xs hidden lg:table-cell">Location</th>
+                     <th className="text-left py-2 px-2 sm:px-3 text-muted-foreground font-medium text-xs hidden md:table-cell">Device / Browser</th>
+                     <th className="text-left py-2 px-2 sm:px-3 text-muted-foreground font-medium text-xs">Login Time</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -623,12 +624,18 @@ export default function AdminDashboard() {
                             </div>
                           </div>
                         </td>
-                        <td className="py-2 px-2 sm:px-3 hidden md:table-cell">
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <Monitor className="h-3 w-3 shrink-0" />
-                            <span className="truncate max-w-[250px]">{browser}{os ? ` · ${os}` : ''}</span>
-                          </div>
-                        </td>
+                         <td className="py-2 px-2 sm:px-3 hidden lg:table-cell">
+                           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                             <Globe className="h-3 w-3 shrink-0" />
+                             <span>{log.city && log.country ? `${log.city}, ${log.country}` : log.country || 'Unknown'}</span>
+                           </div>
+                         </td>
+                         <td className="py-2 px-2 sm:px-3 hidden md:table-cell">
+                           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                             <Monitor className="h-3 w-3 shrink-0" />
+                             <span className="truncate max-w-[250px]">{browser}{os ? ` · ${os}` : ''}</span>
+                           </div>
+                         </td>
                         <td className="py-2 px-2 sm:px-3 text-xs text-muted-foreground">
                           {new Date(log.login_at).toLocaleString()}
                         </td>

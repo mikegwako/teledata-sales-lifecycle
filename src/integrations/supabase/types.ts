@@ -213,6 +213,8 @@ export type Database = {
       }
       login_audit_logs: {
         Row: {
+          city: string | null
+          country: string | null
           id: string
           ip_address: string | null
           login_at: string
@@ -220,6 +222,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          city?: string | null
+          country?: string | null
           id?: string
           ip_address?: string | null
           login_at?: string
@@ -227,6 +231,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          city?: string | null
+          country?: string | null
           id?: string
           ip_address?: string | null
           login_at?: string
