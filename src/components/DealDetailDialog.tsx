@@ -699,6 +699,15 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
           </TabsContent>
         </Tabs>
       </DialogContent>
+      {lightboxDoc && (
+        <DocumentLightbox
+          open={!!lightboxDoc}
+          onOpenChange={(open) => !open && setLightboxDoc(null)}
+          url={lightboxDoc.url}
+          fileName={lightboxDoc.fileName}
+          contentType={lightboxDoc.contentType}
+        />
+      )}
     </Dialog>
   );
 }
