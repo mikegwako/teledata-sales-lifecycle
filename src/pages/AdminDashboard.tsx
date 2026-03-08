@@ -54,7 +54,7 @@ interface ActivityLog {
   created_at: string;
   deal_id: string | null;
   user_id: string | null;
-  profile?: { full_name: string } | null;
+  profile?: { full_name: string; avatar_url: string | null; avatar_position: string } | null;
   deal?: { title: string; deal_number: number } | null;
 }
 
