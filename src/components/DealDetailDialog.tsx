@@ -478,7 +478,7 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
               <div className="space-y-1.5">
                 <Label className="text-xs">Profit (before tax)</Label>
                 <div className={`h-10 flex items-center px-3 rounded-md border border-input font-mono text-sm ${profit >= 0 ? 'text-success' : 'text-destructive'}`}>
-                  {formatCurrency(profit)}
+                  {formatDisplayAmount(profit)}
                 </div>
               </div>
             </div>
