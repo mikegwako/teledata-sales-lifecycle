@@ -105,8 +105,20 @@ export function AppSidebar() {
                         className="text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
                         activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
                       >
-                        <item.icon className="mr-2 h-4 w-4" />
+                        <div className="relative mr-2">
+                          <item.icon className="h-4 w-4" />
+                          {item.badge && item.badge > 0 ? (
+                            <span className="absolute -top-1.5 -right-1.5 h-3.5 min-w-[14px] rounded-full bg-destructive text-[8px] font-bold text-destructive-foreground flex items-center justify-center px-0.5">
+                              {item.badge > 9 ? '9+' : item.badge}
+                            </span>
+                          ) : null}
+                        </div>
                         {!collapsed && <span>{item.title}</span>}
+                        {!collapsed && item.badge && item.badge > 0 ? (
+                          <span className="ml-auto text-[10px] font-semibold bg-destructive/10 text-destructive rounded-full px-1.5 py-0.5">
+                            {item.badge}
+                          </span>
+                        ) : null}
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
