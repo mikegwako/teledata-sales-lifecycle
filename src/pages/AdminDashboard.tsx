@@ -25,6 +25,7 @@ interface Deal {
   assigned_to: string | null;
   deal_number: number;
   created_at: string;
+  updated_at: string;
   client_id: string;
   assigned_profile?: { full_name: string } | null;
   profiles?: { full_name: string } | null;
