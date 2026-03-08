@@ -10,6 +10,7 @@ import KanbanBoard from "./pages/KanbanBoard";
 import ProjectInitiation from "./pages/ProjectInitiation";
 import ProjectsView from "./pages/ProjectsView";
 import ExecutiveReport from "./pages/ExecutiveReport";
+import NotificationsPage from "./pages/NotificationsPage";
 import DashboardLayout from "./components/DashboardLayout";
 import { Loader2 } from "lucide-react";
 import { useInactivityLogout } from "@/hooks/useInactivityLogout";
@@ -50,6 +51,7 @@ function AppRoutes() {
         )}
         
         <Route path="/projects" element={<ProjectsView />} />
+        <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </DashboardLayout>

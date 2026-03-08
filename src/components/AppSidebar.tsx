@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { NavLink } from '@/components/NavLink';
 import ProfileSettings from '@/components/ProfileSettings';
 import teledataLogo from '@/assets/teledata-logo.jpeg';
+import { supabase } from '@/lib/supabase';
 import {
   Sidebar,
   SidebarContent,
@@ -15,16 +16,35 @@ import {
   SidebarFooter,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { LayoutDashboard, KanbanSquare, FilePlus, FolderOpen, LogOut, ChevronLeft, FileBarChart, Settings } from 'lucide-react';
+import { LayoutDashboard, KanbanSquare, FilePlus, FolderOpen, LogOut, ChevronLeft, FileBarChart, Settings, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export function AppSidebar() {
-  const { role, profile, signOut } = useAuth();
+  const { role, profile, user, signOut } = useAuth();
   const { state, toggleSidebar } = useSidebar();
   const collapsed = state === 'collapsed';
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  const navItems = [];
+  useEffect(() => {
+    if (!user) return;
+    const fetchUnread = async () => {
+      const { count } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('read', false);
+      setUnreadCount(count || 0);
+    };
+    fetchUnread();
+    const channel = supabase
+      .channel('sidebar-notif-count')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, () => fetchUnread())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
+
+  const navItems: { title: string; url: string; icon: any; badge?: number }[] = [];
 
   if (role === 'admin') {
     navItems.push(
@@ -48,6 +68,8 @@ export function AppSidebar() {
       { title: 'My Projects', url: '/projects', icon: FolderOpen },
     );
   }
+
+  navItems.push({ title: 'Notifications', url: '/notifications', icon: Bell, badge: unreadCount });
 
   return (
     <>
@@ -83,8 +105,20 @@ export function AppSidebar() {
                         className="text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
                         activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
                       >
-                        <item.icon className="mr-2 h-4 w-4" />
+                        <div className="relative mr-2">
+                          <item.icon className="h-4 w-4" />
+                          {item.badge && item.badge > 0 ? (
+                            <span className="absolute -top-1.5 -right-1.5 h-3.5 min-w-[14px] rounded-full bg-destructive text-[8px] font-bold text-destructive-foreground flex items-center justify-center px-0.5">
+                              {item.badge > 9 ? '9+' : item.badge}
+                            </span>
+                          ) : null}
+                        </div>
                         {!collapsed && <span>{item.title}</span>}
+                        {!collapsed && item.badge && item.badge > 0 ? (
+                          <span className="ml-auto text-[10px] font-semibold bg-destructive/10 text-destructive rounded-full px-1.5 py-0.5">
+                            {item.badge}
+                          </span>
+                        ) : null}
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
