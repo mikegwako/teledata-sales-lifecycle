@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Loader2, Download, TrendingUp, AlertTriangle, Users, DollarSign, FileText, Activity } from 'lucide-react';
 import { RoleBadge } from '@/components/RoleBadge';
+import { UserAvatar } from '@/components/UserAvatar';
 import { useUserRoles } from '@/hooks/useUserRoles';
 import { useCurrency } from '@/hooks/useCurrency';
 import teledataLogo from '@/assets/teledata-logo.jpeg';
@@ -27,6 +28,8 @@ interface StaffActivity {
   user_id: string;
   count: number;
   name: string;
+  avatar_url: string | null;
+  avatar_position: string;
 }
 
 export default function ExecutiveReport() {
@@ -43,17 +46,17 @@ export default function ExecutiveReport() {
   const fetchData = async () => {
     const [dealRes, logRes] = await Promise.all([
       supabase.from('deals').select('*, assigned_profile:profiles!deals_assigned_to_fkey(full_name), profiles!deals_client_id_fkey(full_name)'),
-      supabase.from('activity_logs').select('user_id, id, profile:profiles!activity_logs_user_id_fkey(full_name)').order('created_at', { ascending: false }).limit(500),
+      supabase.from('activity_logs').select('user_id, id, profile:profiles!activity_logs_user_id_fkey(full_name, avatar_url, avatar_position)').order('created_at', { ascending: false }).limit(500),
     ]);
 
     const dealsData = (dealRes.data as any) || [];
     setDeals(dealsData);
 
-    const staffMap: Record<string, { count: number; name: string }> = {};
+    const staffMap: Record<string, { count: number; name: string; avatar_url: string | null; avatar_position: string }> = {};
     (logRes.data || []).forEach((log: any) => {
       if (!log.user_id) return;
       if (!staffMap[log.user_id]) {
-        staffMap[log.user_id] = { count: 0, name: log.profile?.full_name || 'Unknown' };
+        staffMap[log.user_id] = { count: 0, name: log.profile?.full_name || 'Unknown', avatar_url: log.profile?.avatar_url || null, avatar_position: log.profile?.avatar_position || 'center' };
       }
       staffMap[log.user_id].count++;
     });
@@ -261,6 +264,7 @@ export default function ExecutiveReport() {
                       <div key={staff.user_id} className="space-y-1">
                         <div className="flex justify-between text-sm items-center">
                           <span className="font-medium text-foreground flex items-center gap-1.5">
+                            <UserAvatar fullName={staff.name} avatarUrl={staff.avatar_url} avatarPosition={staff.avatar_position} className="h-6 w-6" fallbackClassName="text-[9px]" />
                             {staff.name}
                             {userRole && <RoleBadge role={userRole} />}
                           </span>

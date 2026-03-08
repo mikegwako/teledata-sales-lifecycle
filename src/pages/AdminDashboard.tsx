@@ -8,6 +8,7 @@ import { Loader2, TrendingUp, FolderOpen, Target, DollarSign, Activity, Users, A
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { RoleBadge } from '@/components/RoleBadge';
+import { UserAvatar } from '@/components/UserAvatar';
 import { useUserRoles } from '@/hooks/useUserRoles';
 import { useCurrency } from '@/hooks/useCurrency';
 import { useToast } from '@/hooks/use-toast';
@@ -37,6 +38,8 @@ interface Profile {
   phone_number: string | null;
   currency_preference: string;
   frozen_actions: string[];
+  avatar_url: string | null;
+  avatar_position: string;
 }
 
 interface UserEmail {
@@ -51,7 +54,7 @@ interface ActivityLog {
   created_at: string;
   deal_id: string | null;
   user_id: string | null;
-  profile?: { full_name: string } | null;
+  profile?: { full_name: string; avatar_url: string | null; avatar_position: string } | null;
   deal?: { title: string; deal_number: number } | null;
 }
 
@@ -101,8 +104,8 @@ export default function AdminDashboard() {
   const fetchAll = async () => {
     const [dealRes, staffRes, logRes, auditRes] = await Promise.all([
       supabase.from('deals').select('*, assigned_profile:profiles!deals_assigned_to_fkey(full_name), profiles!deals_client_id_fkey(full_name)'),
-      supabase.from('profiles').select('id, full_name, phone_number, currency_preference, frozen_actions, avatar_url'),
-      supabase.from('activity_logs').select('*, profile:profiles!activity_logs_user_id_fkey(full_name), deal:deals!activity_logs_deal_id_fkey(title, deal_number)').order('created_at', { ascending: false }).limit(30),
+      supabase.from('profiles').select('id, full_name, phone_number, currency_preference, frozen_actions, avatar_url, avatar_position'),
+      supabase.from('activity_logs').select('*, profile:profiles!activity_logs_user_id_fkey(full_name, avatar_url, avatar_position), deal:deals!activity_logs_deal_id_fkey(title, deal_number)').order('created_at', { ascending: false }).limit(30),
       supabase.from('login_audit_logs').select('*').order('login_at', { ascending: false }).limit(20),
     ]);
     setDeals((dealRes.data as any) || []);
@@ -355,9 +358,7 @@ export default function AdminDashboard() {
                   <div key={group.key}>
                     {group.logs.length === 1 ? (
                       <div className="flex items-start gap-3 text-sm border-b border-border pb-2 last:border-0">
-                        <div className="h-8 w-8 rounded-full gradient-primary flex items-center justify-center shrink-0">
-                          <span className="text-[10px] font-bold text-primary-foreground">{group.user.charAt(0)?.toUpperCase() || '?'}</span>
-                        </div>
+                        <UserAvatar fullName={group.user} avatarUrl={group.logs[0].profile?.avatar_url} avatarPosition={group.logs[0].profile?.avatar_position} className="h-8 w-8" fallbackClassName="text-[10px]" />
                         <div className="flex-1 min-w-0">
                           <p className="text-foreground flex items-center gap-1.5 flex-wrap">
                             <span className="font-medium">{group.user}</span>
@@ -374,9 +375,7 @@ export default function AdminDashboard() {
                     ) : (
                       <details className="border-b border-border pb-2">
                         <summary className="flex items-center gap-3 text-sm cursor-pointer list-none">
-                          <div className="h-8 w-8 rounded-full gradient-accent flex items-center justify-center shrink-0">
-                            <span className="text-[10px] font-bold text-accent-foreground">{group.user.charAt(0)?.toUpperCase() || '?'}</span>
-                          </div>
+                          <UserAvatar fullName={group.user} avatarUrl={group.logs[0].profile?.avatar_url} avatarPosition={group.logs[0].profile?.avatar_position} className="h-8 w-8" fallbackClassName="text-[10px]" />
                           <div className="flex-1">
                             <p className="font-medium text-foreground flex items-center gap-1.5 flex-wrap">
                               {group.summary}
@@ -496,9 +495,7 @@ export default function AdminDashboard() {
                     <tr key={person.id} className="border-b border-border/50 hover:bg-muted/30">
                       <td className="py-2 px-2 sm:px-3">
                         <div className="flex items-center gap-2">
-                          <div className="h-7 w-7 rounded-full gradient-primary flex items-center justify-center shrink-0">
-                            <span className="text-[10px] font-bold text-primary-foreground">{person.full_name?.charAt(0)?.toUpperCase() || '?'}</span>
-                          </div>
+                          <UserAvatar fullName={person.full_name} avatarUrl={(person as any).avatar_url} avatarPosition={(person as any).avatar_position} className="h-7 w-7" fallbackClassName="text-[10px]" />
                           <div className="min-w-0">
                             <span className="font-medium text-foreground text-xs sm:text-sm block truncate">{person.full_name || 'Unknown'}</span>
                             {person.phone_number && (
@@ -639,9 +636,7 @@ export default function AdminDashboard() {
                       <tr key={log.id} className="border-b border-border/50 hover:bg-muted/30">
                         <td className="py-2 px-2 sm:px-3">
                           <div className="flex items-center gap-2">
-                            <div className="h-7 w-7 rounded-full gradient-primary flex items-center justify-center shrink-0">
-                              <span className="text-[10px] font-bold text-primary-foreground">{profile?.full_name?.charAt(0)?.toUpperCase() || '?'}</span>
-                            </div>
+                            <UserAvatar fullName={profile?.full_name} avatarUrl={(profile as any)?.avatar_url} avatarPosition={(profile as any)?.avatar_position} className="h-7 w-7" fallbackClassName="text-[10px]" />
                             <div className="min-w-0">
                               <span className="font-medium text-foreground text-xs sm:text-sm block truncate">{profile?.full_name || 'Unknown'}</span>
                               {roleMap[log.user_id] && <RoleBadge role={roleMap[log.user_id]} />}
