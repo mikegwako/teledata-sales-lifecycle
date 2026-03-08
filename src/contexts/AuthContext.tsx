@@ -11,6 +11,7 @@ export interface UserProfile {
   frozen_actions: string[];
   auto_delete_days: number | null;
   avatar_url: string | null;
+  avatar_position: string;
 }
 
 interface AuthContextType {
