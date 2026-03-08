@@ -295,9 +295,7 @@ export default function ProjectsView() {
                     {deal.value > 0 && <Badge variant="outline" className="font-mono">{formatCurrency(Number(deal.value))}</Badge>}
                     {deal.assigned_profile && (
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <div className="h-6 w-6 rounded-full gradient-accent flex items-center justify-center">
-                          <span className="text-[10px] font-bold text-accent-foreground">{deal.assigned_profile.full_name?.charAt(0)?.toUpperCase()}</span>
-                        </div>
+                        <UserAvatar fullName={deal.assigned_profile.full_name} avatarUrl={deal.assigned_profile.avatar_url} avatarPosition={deal.assigned_profile.avatar_position} className="h-6 w-6" fallbackClassName="text-[10px]" />
                         <span className="hidden sm:inline">{deal.assigned_profile.full_name}</span>
                       </div>
                     )}
