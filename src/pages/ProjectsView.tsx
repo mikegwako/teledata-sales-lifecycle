@@ -115,7 +115,12 @@ export default function ProjectsView() {
     setDocuments((prev) => ({ ...prev, [dealId]: (data as any) || [] }));
   };
 
-  useEffect(() => { fetchDeals(); }, []);
+  useEffect(() => { fetchDeals(); fetchProfiles(); }, []);
+
+  const fetchProfiles = async () => {
+    const { data } = await supabase.from('profiles').select('id, full_name, avatar_url, avatar_position');
+    setAllProfiles((data as any) || []);
+  };
 
   const handleDelete = async (id: string) => {
     const { error } = await supabase.from('deals').delete().eq('id', id);
