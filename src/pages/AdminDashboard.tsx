@@ -101,7 +101,7 @@ export default function AdminDashboard() {
   const fetchAll = async () => {
     const [dealRes, staffRes, logRes, auditRes] = await Promise.all([
       supabase.from('deals').select('*, assigned_profile:profiles!deals_assigned_to_fkey(full_name), profiles!deals_client_id_fkey(full_name)'),
-      supabase.from('profiles').select('id, full_name, phone_number, currency_preference, frozen_actions'),
+      supabase.from('profiles').select('id, full_name, phone_number, currency_preference, frozen_actions, avatar_url'),
       supabase.from('activity_logs').select('*, profile:profiles!activity_logs_user_id_fkey(full_name), deal:deals!activity_logs_deal_id_fkey(title, deal_number)').order('created_at', { ascending: false }).limit(30),
       supabase.from('login_audit_logs').select('*').order('login_at', { ascending: false }).limit(20),
     ]);
@@ -109,6 +109,22 @@ export default function AdminDashboard() {
     setStaffList((staffRes.data as any) || []);
     setActivityLogs((logRes.data as any) || []);
     setAuditLogs((auditRes.data as any) || []);
+
+    // Fetch user emails via edge function or auth admin — use profiles list to build email map
+    // We'll fetch emails from the auth context by calling a simple edge function
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/list-user-emails`, {
+        headers: { 'Authorization': `Bearer ${session?.access_token}` },
+      });
+      if (res.ok) {
+        const emails = await res.json();
+        const emailMap: Record<string, string> = {};
+        (emails || []).forEach((u: { id: string; email: string }) => { emailMap[u.id] = u.email; });
+        setUserEmails(emailMap);
+      }
+    } catch {}
+
     setLoading(false);
   };
 
