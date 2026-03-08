@@ -184,7 +184,7 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
   };
 
   const fetchProfiles = async () => {
-    const { data } = await supabase.from('profiles').select('id, full_name');
+    const { data } = await supabase.from('profiles').select('id, full_name, avatar_url, avatar_position');
     setAllProfiles((data as any) || []);
   };
 
