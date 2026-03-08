@@ -521,7 +521,7 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
                     {taxLines.map((t, i) => (
                       <div key={i} className="flex items-center justify-between text-xs">
                         <span className="text-muted-foreground">{t.name} ({t.rate}%)</span>
-                        <span className="font-mono text-foreground">{formatCurrency(t.amount)}</span>
+                        <span className="font-mono text-foreground">{formatDisplayAmount(t.amount)}</span>
                       </div>
                     ))}
                     <Separator />
