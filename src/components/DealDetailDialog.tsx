@@ -635,7 +635,7 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
                           setShowMentions(false);
                         }}
                       >
-                        <AtSign className="h-3 w-3 text-primary" />
+                        <UserAvatar fullName={p.full_name} avatarUrl={p.avatar_url} avatarPosition={p.avatar_position} className="h-5 w-5" fallbackClassName="text-[8px]" />
                         <span className="text-foreground">{p.full_name}</span>
                         {roleMap[p.id] && <RoleBadge role={roleMap[p.id]} />}
                       </button>
