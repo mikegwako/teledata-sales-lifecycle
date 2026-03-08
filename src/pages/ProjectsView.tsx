@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, MessageSquare, Send, Pencil, Save, X, FolderOpen, Plus, User, Paperclip, Upload, Download, FileText, Image as ImageIcon, Trash2, ShieldAlert } from 'lucide-react';
+import { Loader2, MessageSquare, Send, Pencil, Save, X, FolderOpen, Plus, User, Paperclip, Upload, Download, FileText, Image as ImageIcon, Trash2, ShieldAlert, AtSign } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { Label } from '@/components/ui/label';
@@ -14,6 +14,7 @@ import { ServiceTypeCombobox } from '@/components/ServiceTypeCombobox';
 import { RoleBadge } from '@/components/RoleBadge';
 import { useUserRoles } from '@/hooks/useUserRoles';
 import { useCurrency } from '@/hooks/useCurrency';
+import { UserAvatar } from '@/components/UserAvatar';
 
 interface Comment {
   id: string;
