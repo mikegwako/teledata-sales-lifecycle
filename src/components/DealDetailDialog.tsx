@@ -17,6 +17,7 @@ import DocumentLightbox from '@/components/DocumentLightbox';
 import { compressImage } from '@/lib/imageCompression';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { UserAvatar } from '@/components/UserAvatar';
 import {
   Send, Upload, FileText, Image as ImageIcon, Trash2, Download,
   DollarSign, User, Calendar, Loader2, MessageSquare, Paperclip, Clock, ShieldAlert, Eye, AtSign,
