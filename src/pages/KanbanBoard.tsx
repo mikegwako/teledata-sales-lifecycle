@@ -18,6 +18,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { RoleBadge } from '@/components/RoleBadge';
 import { useUserRoles } from '@/hooks/useUserRoles';
 import { useCurrency } from '@/hooks/useCurrency';
+import { UserAvatar } from '@/components/UserAvatar';
 
 interface Deal {
   id: string;
