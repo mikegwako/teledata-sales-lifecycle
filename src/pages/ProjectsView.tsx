@@ -84,7 +84,7 @@ export default function ProjectsView() {
     setLoading(true);
     const { data, error } = await supabase
       .from('deals')
-      .select('*, profiles!deals_client_id_fkey(full_name), assigned_profile:profiles!deals_assigned_to_fkey(full_name)')
+      .select('*, profiles!deals_client_id_fkey(full_name, avatar_url, avatar_position), assigned_profile:profiles!deals_assigned_to_fkey(full_name, avatar_url, avatar_position)')
       .order('created_at', { ascending: false });
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
