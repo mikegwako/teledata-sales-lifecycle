@@ -35,6 +35,13 @@ export default function SmartDashboardKPIs({ deals, formatCurrency }: SmartDashb
   const potentialProfit = totalValue - totalCost;
   const overallMargin = totalValue > 0 ? Math.round((potentialProfit / totalValue) * 100) : 0;
 
+  // Closed / Completed deals
+  const closedDeals = deals.filter(d => d.status === 'Completion');
+  const closedValue = closedDeals.reduce((s, d) => s + Number(d.value || 0), 0);
+  const closedCost = closedDeals.reduce((s, d) => s + Number(d.cost || 0), 0);
+  const finalProfit = closedValue - closedCost;
+  const closedMargin = closedValue > 0 ? Math.round((finalProfit / closedValue) * 100) : 0;
+
   // Low-margin deals (< 15%)
   const lowMarginDeals = activeDeals.filter(d => {
     const v = Number(d.value || 0);
