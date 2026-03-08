@@ -17,6 +17,7 @@ import DealDetailDialog from '@/components/DealDetailDialog';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { RoleBadge } from '@/components/RoleBadge';
 import { useUserRoles } from '@/hooks/useUserRoles';
+import { useCurrency } from '@/hooks/useCurrency';
 
 interface Deal {
   id: string;
