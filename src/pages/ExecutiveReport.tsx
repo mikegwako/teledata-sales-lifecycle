@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Loader2, Download, TrendingUp, AlertTriangle, Users, DollarSign, FileText, Activity } from 'lucide-react';
 import { RoleBadge } from '@/components/RoleBadge';
+import { UserAvatar } from '@/components/UserAvatar';
 import { useUserRoles } from '@/hooks/useUserRoles';
 import { useCurrency } from '@/hooks/useCurrency';
 import teledataLogo from '@/assets/teledata-logo.jpeg';
