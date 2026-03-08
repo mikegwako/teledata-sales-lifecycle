@@ -527,7 +527,7 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
                     <Separator />
                     <div className="flex items-center justify-between text-xs font-semibold">
                       <span className="text-muted-foreground">Total Tax ({totalTaxRate}%)</span>
-                      <span className="font-mono text-destructive">{formatCurrency(totalTax)}</span>
+                      <span className="font-mono text-destructive">{formatDisplayAmount(totalTax)}</span>
                     </div>
                     <div className={`flex items-center justify-between text-sm font-bold pt-1`}>
                       <span className="text-foreground">Net Profit (after tax)</span>
