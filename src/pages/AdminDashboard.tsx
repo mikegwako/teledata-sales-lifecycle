@@ -462,7 +462,7 @@ export default function AdminDashboard() {
               <thead>
                 <tr className="border-b border-border">
                   <th className="text-left py-2 px-2 sm:px-3 text-muted-foreground font-medium text-xs">User</th>
-                  <th className="text-left py-2 px-2 sm:px-3 text-muted-foreground font-medium text-xs hidden sm:table-cell">Phone</th>
+                  <th className="text-left py-2 px-2 sm:px-3 text-muted-foreground font-medium text-xs hidden sm:table-cell">Contact</th>
                   <th className="text-left py-2 px-2 sm:px-3 text-muted-foreground font-medium text-xs">Role</th>
                   <th className="text-left py-2 px-2 sm:px-3 text-muted-foreground font-medium text-xs hidden md:table-cell">Restrictions</th>
                   <th className="text-left py-2 px-2 sm:px-3 text-muted-foreground font-medium text-xs">Deals</th>
