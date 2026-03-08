@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -12,9 +12,12 @@ import { useToast } from '@/hooks/use-toast';
 import { RoleBadge } from '@/components/RoleBadge';
 import { useUserRoles } from '@/hooks/useUserRoles';
 import { useCurrency } from '@/hooks/useCurrency';
+import DocumentLightbox from '@/components/DocumentLightbox';
+import { compressImage } from '@/lib/imageCompression';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Send, Upload, FileText, Image as ImageIcon, Trash2, Download,
-  DollarSign, User, Calendar, Loader2, MessageSquare, Paperclip, Clock, ShieldAlert,
+  DollarSign, User, Calendar, Loader2, MessageSquare, Paperclip, Clock, ShieldAlert, Eye, AtSign,
 } from 'lucide-react';
 
 interface Comment {
@@ -144,6 +147,12 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
   const [loadingComments, setLoadingComments] = useState(false);
   const [loadingDocs, setLoadingDocs] = useState(false);
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
+  const [commentReads, setCommentReads] = useState<Record<string, string[]>>({});
+  const [lightboxDoc, setLightboxDoc] = useState<{ url: string; fileName: string; contentType: string } | null>(null);
+  const [allProfiles, setAllProfiles] = useState<{ id: string; full_name: string }[]>([]);
+  const [showMentions, setShowMentions] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState('');
+  const commentInputRef = useRef<HTMLInputElement>(null);
 
   const frozenActions = profile?.frozen_actions || [];
   const canComment = !frozenActions.includes('comment');
@@ -156,8 +165,38 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
       fetchComments();
       fetchDocuments();
       fetchActivityLogs();
+      fetchProfiles();
     }
   }, [deal?.id, open]);
+
+  const fetchProfiles = async () => {
+    const { data } = await supabase.from('profiles').select('id, full_name');
+    setAllProfiles((data as any) || []);
+  };
+
+  const fetchCommentReads = useCallback(async (commentIds: string[]) => {
+    if (!commentIds.length) return;
+    const { data } = await supabase
+      .from('comment_reads')
+      .select('comment_id, user_id')
+      .in('comment_id', commentIds);
+    const reads: Record<string, string[]> = {};
+    (data || []).forEach((r: any) => {
+      if (!reads[r.comment_id]) reads[r.comment_id] = [];
+      reads[r.comment_id].push(r.user_id);
+    });
+    setCommentReads(reads);
+  }, []);
+
+  const markCommentsAsRead = useCallback(async (commentIds: string[]) => {
+    if (!user || !commentIds.length) return;
+    const unread = commentIds.filter(id => !(commentReads[id] || []).includes(user.id));
+    if (!unread.length) return;
+    await Promise.all(unread.map(id =>
+      supabase.from('comment_reads').upsert({ comment_id: id, user_id: user.id }, { onConflict: 'comment_id,user_id' })
+    ));
+    fetchCommentReads(commentIds);
+  }, [user, commentReads, fetchCommentReads]);
 
   const fetchComments = async () => {
     if (!deal) return;
@@ -171,7 +210,14 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
       console.error('Comments fetch error:', error);
       setComments([]);
     } else {
-      setComments((data as any) || []);
+      const commentsData = (data as any) || [];
+      setComments(commentsData);
+      fetchCommentReads(commentsData.map((c: any) => c.id));
+      // Auto-mark as read when viewing
+      if (user) {
+        const ids = commentsData.filter((c: any) => c.user_id !== user.id).map((c: any) => c.id);
+        if (ids.length) setTimeout(() => markCommentsAsRead(ids), 500);
+      }
     }
     setLoadingComments(false);
   };
@@ -247,7 +293,17 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
       return;
     }
     setUploading(true);
-    const file = e.target.files[0];
+    let file = e.target.files[0];
+    
+    // Auto-compress images before upload
+    if (file.type.startsWith('image/')) {
+      const originalSize = file.size;
+      file = await compressImage(file, 1920, 0.8);
+      if (file.size < originalSize) {
+        toast({ title: 'Image optimized', description: `Compressed from ${(originalSize / 1024 / 1024).toFixed(1)}MB to ${(file.size / 1024 / 1024).toFixed(1)}MB` });
+      }
+    }
+
     const path = `${deal.id}/${Date.now()}_${file.name}`;
 
     const { error: uploadError } = await supabase.storage.from('documents').upload(path, file);
@@ -279,6 +335,13 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
   const handleDownload = async (doc: Document) => {
     const { data } = await supabase.storage.from('documents').createSignedUrl(doc.storage_path, 300);
     if (data?.signedUrl) window.open(data.signedUrl, '_blank');
+  };
+
+  const handlePreview = async (doc: Document) => {
+    const { data } = await supabase.storage.from('documents').createSignedUrl(doc.storage_path, 300);
+    if (data?.signedUrl) {
+      setLightboxDoc({ url: data.signedUrl, fileName: doc.file_name, contentType: doc.content_type });
+    }
   };
 
   const handleDeleteDoc = async (doc: Document) => {
@@ -417,8 +480,19 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
                 )}
                 {comments.map((c) => {
                   const commentRole = roleMap[c.user_id];
+                  const readers = (commentReads[c.id] || []).filter(uid => uid !== c.user_id);
+                  const readerNames = readers.map(uid => allProfiles.find(p => p.id === uid)?.full_name || 'User').slice(0, 3);
+                  
+                  // Render @mentions in bold
+                  const renderContent = (text: string) => {
+                    const parts = text.split(/(@\w[\w\s]*)/g);
+                    return parts.map((part, i) =>
+                      part.startsWith('@') ? <span key={i} className="font-semibold text-primary">{part}</span> : part
+                    );
+                  };
+                  
                   return (
-                    <div key={c.id} className="flex gap-3 group">
+                    <motion.div key={c.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex gap-3 group">
                       <div className="h-7 w-7 rounded-full gradient-primary flex items-center justify-center shrink-0">
                         <span className="text-[10px] font-bold text-primary-foreground">
                           {c.profile?.full_name?.charAt(0)?.toUpperCase() || '?'}
@@ -431,19 +505,27 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
                             {commentRole && <RoleBadge role={commentRole} />}
                             <span className="text-[10px] text-muted-foreground">{new Date(c.created_at).toLocaleString()}</span>
                           </div>
-                          {(role === 'admin' || c.user_id === user?.id) && (
-                            <Button
-                              variant="ghost" size="icon"
-                              className="h-5 w-5 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
-                              onClick={() => handleDeleteComment(c.id)}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          )}
+                          <div className="flex items-center gap-1">
+                            {readers.length > 0 && (
+                              <span className="text-[9px] text-muted-foreground flex items-center gap-0.5" title={`Seen by ${readerNames.join(', ')}`}>
+                                <Eye className="h-3 w-3" />
+                                {readers.length}
+                              </span>
+                            )}
+                            {(role === 'admin' || c.user_id === user?.id) && (
+                              <Button
+                                variant="ghost" size="icon"
+                                className="h-5 w-5 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
+                                onClick={() => handleDeleteComment(c.id)}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
                         </div>
-                        <p className="text-sm text-foreground mt-0.5">{c.content}</p>
+                        <p className="text-sm text-foreground mt-0.5">{renderContent(c.content)}</p>
                       </div>
-                    </div>
+                    </motion.div>
                   );
                 })}
               </div>
@@ -454,18 +536,58 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
                 Your commenting privileges have been suspended.
               </div>
             )}
-            <div className="flex gap-2 mt-3">
-              <Input
-                placeholder={canComment ? 'Write a comment...' : 'Commenting disabled'}
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleComment()}
-                className="text-sm"
-                disabled={!canComment}
-              />
-              <Button size="icon" className="shrink-0 gradient-primary text-primary-foreground" onClick={handleComment} disabled={!newComment.trim() || !canComment}>
-                <Send className="h-4 w-4" />
-              </Button>
+            <div className="relative mt-3">
+              {showMentions && (
+                <div className="absolute bottom-full mb-1 left-0 right-0 z-50 bg-card border border-border rounded-lg shadow-elevated max-h-[150px] overflow-y-auto">
+                  {allProfiles
+                    .filter(p => p.full_name?.toLowerCase().includes(mentionQuery.toLowerCase()))
+                    .slice(0, 5)
+                    .map(p => (
+                      <button
+                        key={p.id}
+                        className="w-full text-left px-3 py-1.5 text-sm hover:bg-muted/50 flex items-center gap-2"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          const before = newComment.substring(0, newComment.lastIndexOf('@'));
+                          setNewComment(`${before}@${p.full_name} `);
+                          setShowMentions(false);
+                        }}
+                      >
+                        <AtSign className="h-3 w-3 text-primary" />
+                        <span className="text-foreground">{p.full_name}</span>
+                        {roleMap[p.id] && <RoleBadge role={roleMap[p.id]} />}
+                      </button>
+                    ))}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <Input
+                  ref={commentInputRef}
+                  placeholder={canComment ? 'Write a comment... (type @ to mention)' : 'Commenting disabled'}
+                  value={newComment}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setNewComment(val);
+                    const lastAt = val.lastIndexOf('@');
+                    if (lastAt >= 0 && !val.substring(lastAt).includes(' ')) {
+                      setShowMentions(true);
+                      setMentionQuery(val.substring(lastAt + 1));
+                    } else {
+                      setShowMentions(false);
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !showMentions) handleComment();
+                    if (e.key === 'Escape') setShowMentions(false);
+                  }}
+                  onBlur={() => setTimeout(() => setShowMentions(false), 200)}
+                  className="text-sm"
+                  disabled={!canComment}
+                />
+                <Button size="icon" className="shrink-0 gradient-primary text-primary-foreground" onClick={handleComment} disabled={!newComment.trim() || !canComment}>
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </TabsContent>
 
@@ -492,7 +614,7 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
                 {documents.map((doc) => {
                   const uploaderRole = roleMap[doc.uploaded_by];
                   return (
-                    <div key={doc.id} className="flex items-center gap-3 p-2.5 rounded-lg border border-border hover:bg-muted/30 transition-colors">
+                    <div key={doc.id} className="flex items-center gap-3 p-2.5 rounded-lg border border-border hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => handlePreview(doc)}>
                       {getFileIcon(doc.content_type)}
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-foreground truncate">{doc.file_name}</p>
@@ -505,11 +627,14 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
                           • {new Date(doc.created_at).toLocaleDateString()}
                         </p>
                       </div>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => handleDownload(doc)}>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={(e) => { e.stopPropagation(); handlePreview(doc); }} title="Preview">
+                        <Eye className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={(e) => { e.stopPropagation(); handleDownload(doc); }}>
                         <Download className="h-3.5 w-3.5" />
                       </Button>
                       {(role === 'admin' || doc.uploaded_by === user?.id) && (
-                        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteDoc(doc)}>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive" onClick={(e) => { e.stopPropagation(); handleDeleteDoc(doc); }}>
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       )}
@@ -574,6 +699,15 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
           </TabsContent>
         </Tabs>
       </DialogContent>
+      {lightboxDoc && (
+        <DocumentLightbox
+          open={!!lightboxDoc}
+          onOpenChange={(open) => !open && setLightboxDoc(null)}
+          url={lightboxDoc.url}
+          fileName={lightboxDoc.fileName}
+          contentType={lightboxDoc.contentType}
+        />
+      )}
     </Dialog>
   );
 }

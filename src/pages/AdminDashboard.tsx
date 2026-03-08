@@ -13,6 +13,8 @@ import { useCurrency } from '@/hooks/useCurrency';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
+import { motion } from 'framer-motion';
+import SmartDashboardKPIs from '@/components/SmartDashboardKPIs';
 
 interface Deal {
   id: string;
@@ -23,6 +25,7 @@ interface Deal {
   assigned_to: string | null;
   deal_number: number;
   created_at: string;
+  updated_at: string;
   client_id: string;
   assigned_profile?: { full_name: string } | null;
   profiles?: { full_name: string } | null;
@@ -250,7 +253,7 @@ export default function AdminDashboard() {
   const logGroups = groupLogs(activityLogs);
 
   return (
-    <div className="animate-fade-in space-y-6">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }} className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold font-display text-foreground">Admin Command Center</h1>
@@ -260,6 +263,9 @@ export default function AdminDashboard() {
           <FileBarChart className="h-4 w-4 mr-2" />Executive Report
         </Button>
       </div>
+
+      {/* Smart Dashboard: Value vs Profit, Margin Flags, Stalled Alerts */}
+      <SmartDashboardKPIs deals={deals as any} formatCurrency={formatCurrency} />
 
       {/* Metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -574,6 +580,6 @@ export default function AdminDashboard() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </motion.div>
   );
 }
