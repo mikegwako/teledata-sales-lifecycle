@@ -252,11 +252,10 @@ export default function KanbanBoard() {
                                   {deal.value > 0 && <p className="text-xs font-mono font-semibold text-primary mt-1.5">{formatCurrency(Number(deal.value))}</p>}
                                   {deal.assigned_profile ? (
                                     <div className="flex items-center gap-1.5 mt-2">
-                                      <div className="h-5 w-5 rounded-full gradient-accent flex items-center justify-center">
-                                        <span className="text-[9px] font-bold text-accent-foreground">{deal.assigned_profile.full_name?.charAt(0)?.toUpperCase()}</span>
-                                      </div>
+                                      <UserAvatar fullName={deal.assigned_profile.full_name} avatarUrl={deal.assigned_profile.avatar_url} avatarPosition={deal.assigned_profile.avatar_position} className="h-5 w-5" fallbackClassName="text-[9px]" />
                                       <span className="text-[10px] text-muted-foreground truncate">{deal.assigned_profile.full_name}</span>
                                       {deal.assigned_to && roleMap[deal.assigned_to] && <RoleBadge role={roleMap[deal.assigned_to]} />}
+                                    </div>
                                     </div>
                                   ) : (
                                     role === 'staff' && (
