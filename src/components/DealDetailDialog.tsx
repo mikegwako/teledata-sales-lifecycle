@@ -210,7 +210,14 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
       console.error('Comments fetch error:', error);
       setComments([]);
     } else {
-      setComments((data as any) || []);
+      const commentsData = (data as any) || [];
+      setComments(commentsData);
+      fetchCommentReads(commentsData.map((c: any) => c.id));
+      // Auto-mark as read when viewing
+      if (user) {
+        const ids = commentsData.filter((c: any) => c.user_id !== user.id).map((c: any) => c.id);
+        if (ids.length) setTimeout(() => markCommentsAsRead(ids), 500);
+      }
     }
     setLoadingComments(false);
   };
