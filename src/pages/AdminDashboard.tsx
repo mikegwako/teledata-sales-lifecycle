@@ -113,20 +113,24 @@ export default function AdminDashboard() {
     setActivityLogs((logRes.data as any) || []);
     setAuditLogs((auditRes.data as any) || []);
 
-    // Fetch user emails via edge function or auth admin — use profiles list to build email map
-    // We'll fetch emails from the auth context by calling a simple edge function
+    // Fetch auth emails for admin user management table
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/list-user-emails`, {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` },
-      });
-      if (res.ok) {
-        const emails = await res.json();
+      const { data, error } = await supabase.functions.invoke<UserEmail[]>('list-user-emails');
+
+      if (error) {
+        console.error('Failed to load user emails:', error);
+        toast({ title: 'Could not load user emails', description: error.message, variant: 'destructive' });
+      } else {
         const emailMap: Record<string, string> = {};
-        (emails || []).forEach((u: { id: string; email: string }) => { emailMap[u.id] = u.email; });
+        (data || []).forEach((u) => {
+          if (u?.id && u?.email) emailMap[u.id] = u.email;
+        });
         setUserEmails(emailMap);
       }
-    } catch {}
+    } catch (err: any) {
+      console.error('Failed to load user emails:', err);
+      toast({ title: 'Could not load user emails', description: err?.message || 'Unexpected error', variant: 'destructive' });
+    }
 
     setLoading(false);
   };
