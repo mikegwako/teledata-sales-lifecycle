@@ -149,7 +149,7 @@ export default function ProfileSettings({ open, onOpenChange }: ProfileSettingsP
             {avatarPreview && (
               <div className="flex items-center gap-1.5">
                 <Label className="text-xs text-muted-foreground">Position:</Label>
-                {(['top', 'center', 'bottom'] as const).map((pos) => (
+                {(['top', 'left', 'center', 'right', 'bottom'] as const).map((pos) => (
                   <Button
                     key={pos}
                     variant={avatarPosition === pos ? 'default' : 'outline'}

@@ -17,6 +17,7 @@ import DocumentLightbox from '@/components/DocumentLightbox';
 import { compressImage } from '@/lib/imageCompression';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { UserAvatar } from '@/components/UserAvatar';
 import {
   Send, Upload, FileText, Image as ImageIcon, Trash2, Download,
   DollarSign, User, Calendar, Loader2, MessageSquare, Paperclip, Clock, ShieldAlert, Eye, AtSign,
@@ -27,7 +28,7 @@ interface Comment {
   content: string;
   created_at: string;
   user_id: string;
-  profile?: { full_name: string } | null;
+  profile?: { full_name: string; avatar_url: string | null; avatar_position: string } | null;
 }
 
 interface Document {
@@ -38,7 +39,7 @@ interface Document {
   content_type: string;
   created_at: string;
   uploaded_by: string;
-  uploader?: { full_name: string } | null;
+  uploader?: { full_name: string; avatar_url: string | null; avatar_position: string } | null;
 }
 
 interface ActivityLog {
@@ -47,7 +48,7 @@ interface ActivityLog {
   details: string;
   created_at: string;
   user_id: string | null;
-  profile?: { full_name: string } | null;
+  profile?: { full_name: string; avatar_url: string | null; avatar_position: string } | null;
 }
 
 interface Deal {
@@ -62,8 +63,8 @@ interface Deal {
   created_at: string;
   client_id: string;
   assigned_to: string | null;
-  profiles?: { full_name: string } | null;
-  assigned_profile?: { full_name: string } | null;
+  profiles?: { full_name: string; avatar_url: string | null; avatar_position: string } | null;
+  assigned_profile?: { full_name: string; avatar_url: string | null; avatar_position: string } | null;
 }
 
 interface DealDetailDialogProps {
@@ -151,7 +152,7 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   const [commentReads, setCommentReads] = useState<Record<string, string[]>>({});
   const [lightboxDoc, setLightboxDoc] = useState<{ url: string; fileName: string; contentType: string } | null>(null);
-  const [allProfiles, setAllProfiles] = useState<{ id: string; full_name: string }[]>([]);
+  const [allProfiles, setAllProfiles] = useState<{ id: string; full_name: string; avatar_url: string | null; avatar_position: string }[]>([]);
   const [showMentions, setShowMentions] = useState(false);
   const [mentionQuery, setMentionQuery] = useState('');
   const commentInputRef = useRef<HTMLInputElement>(null);
@@ -183,7 +184,7 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
   };
 
   const fetchProfiles = async () => {
-    const { data } = await supabase.from('profiles').select('id, full_name');
+    const { data } = await supabase.from('profiles').select('id, full_name, avatar_url, avatar_position');
     setAllProfiles((data as any) || []);
   };
 
@@ -216,7 +217,7 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
     setLoadingComments(true);
     const { data, error } = await supabase
       .from('comments')
-      .select('*, profile:profiles!comments_user_id_fkey(full_name)')
+      .select('*, profile:profiles!comments_user_id_fkey(full_name, avatar_url, avatar_position)')
       .eq('deal_id', deal.id)
       .order('created_at', { ascending: true });
     if (error) {
@@ -240,7 +241,7 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
     setLoadingDocs(true);
     const { data } = await supabase
       .from('documents')
-      .select('*, uploader:profiles!documents_uploaded_by_fkey(full_name)')
+      .select('*, uploader:profiles!documents_uploaded_by_fkey(full_name, avatar_url, avatar_position)')
       .eq('deal_id', deal.id)
       .order('created_at', { ascending: false });
     setDocuments((data as any) || []);
@@ -251,7 +252,7 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
     if (!deal) return;
     const { data } = await supabase
       .from('activity_logs')
-      .select('*, profile:profiles!activity_logs_user_id_fkey(full_name)')
+      .select('*, profile:profiles!activity_logs_user_id_fkey(full_name, avatar_url, avatar_position)')
       .eq('deal_id', deal.id)
       .order('created_at', { ascending: false })
       .limit(30);
@@ -558,11 +559,7 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
                   
                   return (
                     <motion.div key={c.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex gap-3 group">
-                      <div className="h-7 w-7 rounded-full gradient-primary flex items-center justify-center shrink-0">
-                        <span className="text-[10px] font-bold text-primary-foreground">
-                          {c.profile?.full_name?.charAt(0)?.toUpperCase() || '?'}
-                        </span>
-                      </div>
+                      <UserAvatar fullName={c.profile?.full_name} avatarUrl={c.profile?.avatar_url} avatarPosition={c.profile?.avatar_position} />
                       <div className="flex-1 bg-muted/40 rounded-lg p-2.5">
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2 flex-wrap">
@@ -587,9 +584,7 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
                                       const rRole = roleMap[uid];
                                       return (
                                         <div key={uid} className="flex items-center gap-2 text-xs">
-                                          <div className="h-5 w-5 rounded-full gradient-primary flex items-center justify-center shrink-0">
-                                            <span className="text-[8px] font-bold text-primary-foreground">{p?.full_name?.charAt(0)?.toUpperCase() || '?'}</span>
-                                          </div>
+                                          <UserAvatar fullName={p?.full_name} avatarUrl={p?.avatar_url} avatarPosition={p?.avatar_position} className="h-5 w-5" fallbackClassName="text-[8px]" />
                                           <span className="text-foreground truncate">{p?.full_name || 'User'}</span>
                                           {rRole && <RoleBadge role={rRole} />}
                                         </div>
@@ -640,7 +635,7 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
                           setShowMentions(false);
                         }}
                       >
-                        <AtSign className="h-3 w-3 text-primary" />
+                        <UserAvatar fullName={p.full_name} avatarUrl={p.avatar_url} avatarPosition={p.avatar_position} className="h-5 w-5" fallbackClassName="text-[8px]" />
                         <span className="text-foreground">{p.full_name}</span>
                         {roleMap[p.id] && <RoleBadge role={roleMap[p.id]} />}
                       </button>

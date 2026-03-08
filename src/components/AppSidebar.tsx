@@ -76,6 +76,7 @@ export function AppSidebar() {
       <Sidebar collapsible="icon" className="border-r-0">
         <SidebarContent className="bg-sidebar">
           <SidebarGroup>
+            {/* Logo */}
             <div className="flex items-center gap-2 px-3 py-4">
               <img src={teledataLogo} alt="Teledata Africa" className="h-9 w-9 rounded-lg object-cover shrink-0" />
               {!collapsed && (
@@ -88,6 +89,37 @@ export function AppSidebar() {
                 <Button variant="ghost" size="icon" className="ml-auto h-7 w-7 text-sidebar-foreground/60 hover:text-sidebar-foreground" onClick={toggleSidebar}>
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
+              )}
+            </div>
+
+            {/* Profile section - right below logo */}
+            <div className="flex items-center gap-2 px-3 py-2 mb-2 border-b border-sidebar-border pb-3">
+              <div className="h-8 w-8 rounded-full overflow-hidden shrink-0 cursor-pointer" onClick={() => setSettingsOpen(true)}>
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt="Avatar" className="h-full w-full object-cover" style={{ objectPosition: profile.avatar_position || 'center' }} />
+                ) : (
+                  <div className="h-full w-full gradient-accent flex items-center justify-center">
+                    <span className="text-xs font-bold text-accent-foreground">
+                      {profile?.full_name?.charAt(0)?.toUpperCase() || '?'}
+                    </span>
+                  </div>
+                )}
+              </div>
+              {!collapsed && (
+                <div className="flex-1 min-w-0 animate-slide-in">
+                  <p className="text-sm font-medium text-sidebar-foreground truncate">{profile?.full_name || 'User'}</p>
+                  <p className="text-xs text-sidebar-foreground/50 capitalize">{role}</p>
+                </div>
+              )}
+              {!collapsed && (
+                <div className="flex gap-1">
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-sidebar-foreground/50 hover:text-sidebar-foreground" onClick={() => setSettingsOpen(true)}>
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-sidebar-foreground/50 hover:text-destructive" onClick={signOut}>
+                    <LogOut className="h-4 w-4" />
+                  </Button>
+                </div>
               )}
             </div>
 
@@ -127,38 +159,6 @@ export function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
-
-        <SidebarFooter className="bg-sidebar border-t border-sidebar-border">
-          <div className="flex items-center gap-2 px-3 py-3">
-            <div className="h-8 w-8 rounded-full overflow-hidden shrink-0">
-              {profile?.avatar_url ? (
-                <img src={profile.avatar_url} alt="Avatar" className="h-full w-full object-cover" style={{ objectPosition: profile.avatar_position || 'center' }} />
-              ) : (
-                <div className="h-full w-full gradient-accent flex items-center justify-center">
-                  <span className="text-xs font-bold text-accent-foreground">
-                    {profile?.full_name?.charAt(0)?.toUpperCase() || '?'}
-                  </span>
-                </div>
-              )}
-            </div>
-            {!collapsed && (
-              <div className="flex-1 min-w-0 animate-slide-in">
-                <p className="text-sm font-medium text-sidebar-foreground truncate">{profile?.full_name || 'User'}</p>
-                <p className="text-xs text-sidebar-foreground/50 capitalize">{role}</p>
-              </div>
-            )}
-            {!collapsed && (
-              <div className="flex gap-1">
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-sidebar-foreground/50 hover:text-sidebar-foreground" onClick={() => setSettingsOpen(true)}>
-                  <Settings className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-sidebar-foreground/50 hover:text-destructive" onClick={signOut}>
-                  <LogOut className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
-          </div>
-        </SidebarFooter>
       </Sidebar>
       <ProfileSettings open={settingsOpen} onOpenChange={setSettingsOpen} />
     </>
