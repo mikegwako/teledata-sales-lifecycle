@@ -207,7 +207,7 @@ export default function KanbanBoard() {
             >
               <p className="text-[10px] uppercase tracking-wider">{col.slice(0, 4)}</p>
               <p className="text-sm sm:text-lg font-bold font-display">{count}</p>
-              {total > 0 && <p className="text-[10px] font-mono">${(total / 1000).toFixed(0)}k</p>}
+              {total > 0 && <p className="text-[10px] font-mono">{formatCurrency(total)}</p>}
             </button>
           );
         })}
