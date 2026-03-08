@@ -253,6 +253,7 @@ export default function KanbanBoard() {
                                         <span className="text-[9px] font-bold text-accent-foreground">{deal.assigned_profile.full_name?.charAt(0)?.toUpperCase()}</span>
                                       </div>
                                       <span className="text-[10px] text-muted-foreground truncate">{deal.assigned_profile.full_name}</span>
+                                      {deal.assigned_to && roleMap[deal.assigned_to] && <RoleBadge role={roleMap[deal.assigned_to]} />}
                                     </div>
                                   ) : (
                                     role === 'staff' && (
