@@ -583,6 +583,64 @@ export default function AdminDashboard() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Security Intelligence — Login Audit Trail */}
+      <Card className="shadow-card">
+        <CardHeader>
+          <CardTitle className="font-display flex items-center gap-2 text-base sm:text-lg">
+            <Fingerprint className="h-5 w-5 text-primary" />Security Intelligence — Login Audit Trail
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {auditLogs.length === 0 ? (
+            <p className="text-muted-foreground text-center py-8">No login activity recorded yet</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-2 px-2 sm:px-3 text-muted-foreground font-medium text-xs">User</th>
+                    <th className="text-left py-2 px-2 sm:px-3 text-muted-foreground font-medium text-xs hidden md:table-cell">Device / Browser</th>
+                    <th className="text-left py-2 px-2 sm:px-3 text-muted-foreground font-medium text-xs">Login Time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {auditLogs.map((log) => {
+                    const profile = staffList.find(s => s.id === log.user_id);
+                    const ua = log.user_agent || '';
+                    const browser = ua.match(/(Chrome|Firefox|Safari|Edge|Opera)\/[\d.]+/)?.[0] || 'Unknown';
+                    const os = ua.match(/(Windows|Mac OS X|Linux|Android|iOS)[\s\d._]*/)?.[0]?.trim() || '';
+                    return (
+                      <tr key={log.id} className="border-b border-border/50 hover:bg-muted/30">
+                        <td className="py-2 px-2 sm:px-3">
+                          <div className="flex items-center gap-2">
+                            <div className="h-7 w-7 rounded-full gradient-primary flex items-center justify-center shrink-0">
+                              <span className="text-[10px] font-bold text-primary-foreground">{profile?.full_name?.charAt(0)?.toUpperCase() || '?'}</span>
+                            </div>
+                            <div className="min-w-0">
+                              <span className="font-medium text-foreground text-xs sm:text-sm block truncate">{profile?.full_name || 'Unknown'}</span>
+                              {roleMap[log.user_id] && <RoleBadge role={roleMap[log.user_id]} />}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-2 px-2 sm:px-3 hidden md:table-cell">
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <Monitor className="h-3 w-3 shrink-0" />
+                            <span className="truncate max-w-[250px]">{browser}{os ? ` · ${os}` : ''}</span>
+                          </div>
+                        </td>
+                        <td className="py-2 px-2 sm:px-3 text-xs text-muted-foreground">
+                          {new Date(log.login_at).toLocaleString()}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </motion.div>
   );
 }
