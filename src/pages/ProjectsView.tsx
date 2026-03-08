@@ -155,6 +155,10 @@ export default function ProjectsView() {
 
   const handleFileUpload = async (dealId: string, e: React.ChangeEvent<HTMLInputElement>) => {
     if (!user || !e.target.files?.length) return;
+    if (!canUpload) {
+      toast({ title: 'Action restricted', description: 'Your upload privileges have been suspended.', variant: 'destructive' });
+      return;
+    }
     setUploading((prev) => ({ ...prev, [dealId]: true }));
     const file = e.target.files[0];
     const path = `${dealId}/${Date.now()}_${file.name}`;
