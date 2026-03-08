@@ -20,7 +20,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </span>
               <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium capitalize">{role}</span>
             </div>
-            <ThemeToggle />
+            <div className="flex items-center gap-3">
+              <ExchangeRateBanner />
+              <ThemeToggle />
+            </div>
           </header>
           <main className="flex-1 overflow-auto p-4 sm:p-6">
             {children}
