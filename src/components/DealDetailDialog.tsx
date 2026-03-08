@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -12,9 +12,12 @@ import { useToast } from '@/hooks/use-toast';
 import { RoleBadge } from '@/components/RoleBadge';
 import { useUserRoles } from '@/hooks/useUserRoles';
 import { useCurrency } from '@/hooks/useCurrency';
+import DocumentLightbox from '@/components/DocumentLightbox';
+import { compressImage } from '@/lib/imageCompression';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Send, Upload, FileText, Image as ImageIcon, Trash2, Download,
-  DollarSign, User, Calendar, Loader2, MessageSquare, Paperclip, Clock, ShieldAlert,
+  DollarSign, User, Calendar, Loader2, MessageSquare, Paperclip, Clock, ShieldAlert, Eye, AtSign,
 } from 'lucide-react';
 
 interface Comment {
