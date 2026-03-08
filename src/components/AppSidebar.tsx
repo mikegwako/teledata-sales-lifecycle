@@ -132,7 +132,7 @@ export function AppSidebar() {
           <div className="flex items-center gap-2 px-3 py-3">
             <div className="h-8 w-8 rounded-full overflow-hidden shrink-0">
               {profile?.avatar_url ? (
-                <img src={profile.avatar_url} alt="Avatar" className="h-full w-full object-cover" />
+                <img src={profile.avatar_url} alt="Avatar" className="h-full w-full object-cover" style={{ objectPosition: profile.avatar_position || 'center' }} />
               ) : (
                 <div className="h-full w-full gradient-accent flex items-center justify-center">
                   <span className="text-xs font-bold text-accent-foreground">
