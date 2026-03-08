@@ -79,6 +79,9 @@ export default function ProjectsView() {
   const [editForm, setEditForm] = useState({ title: '', description: '', service_type: '' });
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const [allProfiles, setAllProfiles] = useState<{ id: string; full_name: string; avatar_url: string | null; avatar_position: string }[]>([]);
+  const [showMentions, setShowMentions] = useState<Record<string, boolean>>({});
+  const [mentionQuery, setMentionQuery] = useState('');
 
   const fetchDeals = async () => {
     setLoading(true);
