@@ -289,9 +289,12 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
 
   const handleSaveFinancials = async () => {
     if (!deal) return;
+    // Convert from user's display currency back to USD for storage
+    const valueUSD = toBaseCurrency(parseFloat(valueEdit) || 0);
+    const costUSD = toBaseCurrency(parseFloat(costEdit) || 0);
     const { error } = await supabase.from('deals').update({
-      value: parseFloat(valueEdit) || 0,
-      cost: parseFloat(costEdit) || 0,
+      value: Math.round(valueUSD * 100) / 100,
+      cost: Math.round(costUSD * 100) / 100,
     }).eq('id', deal.id);
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
