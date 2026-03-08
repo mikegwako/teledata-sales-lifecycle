@@ -147,6 +147,12 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
   const [loadingComments, setLoadingComments] = useState(false);
   const [loadingDocs, setLoadingDocs] = useState(false);
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
+  const [commentReads, setCommentReads] = useState<Record<string, string[]>>({});
+  const [lightboxDoc, setLightboxDoc] = useState<{ url: string; fileName: string; contentType: string } | null>(null);
+  const [allProfiles, setAllProfiles] = useState<{ id: string; full_name: string }[]>([]);
+  const [showMentions, setShowMentions] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState('');
+  const commentInputRef = useRef<HTMLInputElement>(null);
 
   const frozenActions = profile?.frozen_actions || [];
   const canComment = !frozenActions.includes('comment');
