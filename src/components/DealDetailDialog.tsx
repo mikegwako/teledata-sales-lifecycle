@@ -28,7 +28,7 @@ interface Comment {
   content: string;
   created_at: string;
   user_id: string;
-  profile?: { full_name: string } | null;
+  profile?: { full_name: string; avatar_url: string | null; avatar_position: string } | null;
 }
 
 interface Document {
