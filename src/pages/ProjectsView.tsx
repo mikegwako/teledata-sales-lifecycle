@@ -106,7 +106,7 @@ export default function ProjectsView() {
   const fetchDocuments = async (dealId: string) => {
     const { data } = await supabase
       .from('documents')
-      .select('*, uploader:profiles!documents_uploaded_by_fkey(full_name)')
+      .select('*, uploader:profiles!documents_uploaded_by_fkey(full_name, avatar_url, avatar_position)')
       .eq('deal_id', dealId)
       .order('created_at', { ascending: false });
     setDocuments((prev) => ({ ...prev, [dealId]: (data as any) || [] }));
