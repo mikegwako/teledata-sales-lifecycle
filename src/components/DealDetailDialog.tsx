@@ -743,7 +743,7 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
                     {group.logs.length === 1 ? (
                       <div className="flex items-start gap-2 text-sm">
                         <div className="h-1.5 w-1.5 rounded-full bg-primary mt-2 shrink-0" />
-                        <div>
+                        <div className="flex-1">
                           <p className="text-foreground flex items-center gap-1.5 flex-wrap">
                             <span className="font-medium">{group.user}</span>
                             {group.userId && roleMap[group.userId] && <RoleBadge role={roleMap[group.userId]} />}
@@ -752,6 +752,15 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
                           <p className="text-xs text-muted-foreground">{formatActivityText(group.logs[0])}</p>
                           <p className="text-[10px] text-muted-foreground">{new Date(group.time).toLocaleString()}</p>
                         </div>
+                        {group.userId === user?.id && (
+                          <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive" onClick={async () => {
+                            await supabase.from('activity_logs').delete().eq('id', group.logs[0].id);
+                            fetchActivityLogs();
+                            toast({ title: 'Activity deleted' });
+                          }}>
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        )}
                       </div>
                     ) : (
                       <div className="border border-border rounded-lg p-2">
