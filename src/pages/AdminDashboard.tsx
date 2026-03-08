@@ -358,9 +358,7 @@ export default function AdminDashboard() {
                   <div key={group.key}>
                     {group.logs.length === 1 ? (
                       <div className="flex items-start gap-3 text-sm border-b border-border pb-2 last:border-0">
-                        <div className="h-8 w-8 rounded-full gradient-primary flex items-center justify-center shrink-0">
-                          <span className="text-[10px] font-bold text-primary-foreground">{group.user.charAt(0)?.toUpperCase() || '?'}</span>
-                        </div>
+                        <UserAvatar fullName={group.user} avatarUrl={group.logs[0].profile?.avatar_url} avatarPosition={group.logs[0].profile?.avatar_position} className="h-8 w-8" fallbackClassName="text-[10px]" />
                         <div className="flex-1 min-w-0">
                           <p className="text-foreground flex items-center gap-1.5 flex-wrap">
                             <span className="font-medium">{group.user}</span>
