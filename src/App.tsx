@@ -9,13 +9,16 @@ import AdminDashboard from "./pages/AdminDashboard";
 import KanbanBoard from "./pages/KanbanBoard";
 import ProjectInitiation from "./pages/ProjectInitiation";
 import ProjectsView from "./pages/ProjectsView";
+import ExecutiveReport from "./pages/ExecutiveReport";
 import DashboardLayout from "./components/DashboardLayout";
 import { Loader2 } from "lucide-react";
+import { useInactivityLogout } from "@/hooks/useInactivityLogout";
 
 const queryClient = new QueryClient();
 
 function AppRoutes() {
   const { user, role, loading } = useAuth();
+  useInactivityLogout();
 
   if (loading) {
     return (
@@ -40,6 +43,10 @@ function AppRoutes() {
         
         {role === 'client' && (
           <Route path="/new-project" element={<ProjectInitiation />} />
+        )}
+
+        {role === 'admin' && (
+          <Route path="/report" element={<ExecutiveReport />} />
         )}
         
         <Route path="/projects" element={<ProjectsView />} />
