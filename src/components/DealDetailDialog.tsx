@@ -79,6 +79,25 @@ const stageColors: Record<string, string> = {
   Completion: 'bg-success/10 text-success-foreground',
 };
 
+const actionLabels: Record<string, string> = {
+  status_change: '📋 Stage update',
+  claimed: '🤝 Deal claimed',
+  note: '📝 Quick note',
+  project_created: '🆕 Project created',
+  document_upload: '📎 File upload',
+  comment_added: '💬 Comment added',
+  financial_update: '💰 Financial update',
+  deal_updated: '✏️ Deal updated',
+};
+
+const formatActivityText = (log: ActivityLog) => {
+  const details = (log.details || '').trim();
+  if (!details || /deal was modified/i.test(details)) {
+    return actionLabels[log.action] || log.action.replace(/_/g, ' ');
+  }
+  return details;
+};
+
 function groupActivityLogs(logs: ActivityLog[]) {
   const groups: { key: string; logs: ActivityLog[]; summary: string; user: string; userId: string | null; time: string }[] = [];
   for (const log of logs) {
@@ -92,11 +111,8 @@ function groupActivityLogs(logs: ActivityLog[]) {
       lastGroup.logs.push(log);
       const count = lastGroup.logs.length;
       const userName = log.profile?.full_name || 'System';
-      if (log.action === 'document_upload') {
-        lastGroup.summary = `${userName} uploaded ${count} files`;
-      } else {
-        lastGroup.summary = `${userName} performed ${count} actions`;
-      }
+      const activityLabel = (actionLabels[log.action] || log.action.replace(/_/g, ' ')).replace(/^[^\w]+\s*/, '').toLowerCase();
+      lastGroup.summary = `${userName} performed ${count} ${activityLabel}${count > 1 ? 's' : ''}`;
     } else {
       groups.push({
         key: log.id,
