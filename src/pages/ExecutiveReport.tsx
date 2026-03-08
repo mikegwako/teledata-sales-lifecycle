@@ -52,7 +52,7 @@ export default function ExecutiveReport() {
     const dealsData = (dealRes.data as any) || [];
     setDeals(dealsData);
 
-    const staffMap: Record<string, { count: number; name: string }> = {};
+    const staffMap: Record<string, { count: number; name: string; avatar_url: string | null; avatar_position: string }> = {};
     (logRes.data || []).forEach((log: any) => {
       if (!log.user_id) return;
       if (!staffMap[log.user_id]) {
