@@ -779,9 +779,18 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
                         {expandedGroup === group.key && (
                           <div className="mt-2 pl-4 space-y-1 border-l-2 border-border ml-1">
                             {group.logs.map((log) => (
-                              <div key={log.id} className="text-xs text-muted-foreground">
-                                <span>{actionLabels[log.action] || log.action.replace(/_/g, ' ')}: {formatActivityText(log)}</span>
-                                <span className="ml-2 text-[10px]">{new Date(log.created_at).toLocaleString()}</span>
+                              <div key={log.id} className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <span className="flex-1"><span>{actionLabels[log.action] || log.action.replace(/_/g, ' ')}: {formatActivityText(log)}</span>
+                                <span className="ml-2 text-[10px]">{new Date(log.created_at).toLocaleString()}</span></span>
+                                {log.user_id === user?.id && (
+                                  <Button variant="ghost" size="icon" className="h-5 w-5 shrink-0 text-muted-foreground hover:text-destructive" onClick={async () => {
+                                    await supabase.from('activity_logs').delete().eq('id', log.id);
+                                    fetchActivityLogs();
+                                    toast({ title: 'Activity deleted' });
+                                  }}>
+                                    <Trash2 className="h-2.5 w-2.5" />
+                                  </Button>
+                                )}
                               </div>
                             ))}
                           </div>

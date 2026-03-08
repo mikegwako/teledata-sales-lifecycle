@@ -9,6 +9,7 @@ export interface UserProfile {
   phone_number: string | null;
   currency_preference: string;
   frozen_actions: string[];
+  auto_delete_days: number | null;
 }
 
 interface AuthContextType {
