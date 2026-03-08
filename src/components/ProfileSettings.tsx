@@ -26,6 +26,7 @@ export default function ProfileSettings({ open, onOpenChange }: ProfileSettingsP
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarPosition, setAvatarPosition] = useState('center');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Sync form state when profile loads or dialog opens
