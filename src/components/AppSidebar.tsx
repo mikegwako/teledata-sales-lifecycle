@@ -44,7 +44,7 @@ export function AppSidebar() {
     return () => { supabase.removeChannel(channel); };
   }, [user]);
 
-  const navItems = [];
+  const navItems: { title: string; url: string; icon: any; badge?: number }[] = [];
 
   if (role === 'admin') {
     navItems.push(
@@ -68,6 +68,8 @@ export function AppSidebar() {
       { title: 'My Projects', url: '/projects', icon: FolderOpen },
     );
   }
+
+  navItems.push({ title: 'Notifications', url: '/notifications', icon: Bell, badge: unreadCount });
 
   return (
     <>
