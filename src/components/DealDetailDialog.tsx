@@ -138,7 +138,7 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const roleMap = useUserRoles();
-  const { formatCurrency, currencyLabel } = useCurrency();
+  const { formatCurrency, formatDisplayAmount, currencyLabel, toDisplayCurrency, toBaseCurrency } = useCurrency();
 
   const [comments, setComments] = useState<Comment[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -165,8 +165,9 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
 
   useEffect(() => {
     if (deal && open) {
-      setValueEdit(String(deal.value || 0));
-      setCostEdit(String(deal.cost || 0));
+      // DB stores USD; convert to user's display currency for editing
+      setValueEdit(String(Math.round(toDisplayCurrency(deal.value || 0) * 100) / 100));
+      setCostEdit(String(Math.round(toDisplayCurrency(deal.cost || 0) * 100) / 100));
       fetchComments();
       fetchDocuments();
       fetchActivityLogs();
@@ -288,9 +289,12 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
 
   const handleSaveFinancials = async () => {
     if (!deal) return;
+    // Convert from user's display currency back to USD for storage
+    const valueUSD = toBaseCurrency(parseFloat(valueEdit) || 0);
+    const costUSD = toBaseCurrency(parseFloat(costEdit) || 0);
     const { error } = await supabase.from('deals').update({
-      value: parseFloat(valueEdit) || 0,
-      cost: parseFloat(costEdit) || 0,
+      value: Math.round(valueUSD * 100) / 100,
+      cost: Math.round(costUSD * 100) / 100,
     }).eq('id', deal.id);
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -474,7 +478,7 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
               <div className="space-y-1.5">
                 <Label className="text-xs">Profit (before tax)</Label>
                 <div className={`h-10 flex items-center px-3 rounded-md border border-input font-mono text-sm ${profit >= 0 ? 'text-success' : 'text-destructive'}`}>
-                  {formatCurrency(profit)}
+                  {formatDisplayAmount(profit)}
                 </div>
               </div>
             </div>
@@ -517,17 +521,17 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
                     {taxLines.map((t, i) => (
                       <div key={i} className="flex items-center justify-between text-xs">
                         <span className="text-muted-foreground">{t.name} ({t.rate}%)</span>
-                        <span className="font-mono text-foreground">{formatCurrency(t.amount)}</span>
+                        <span className="font-mono text-foreground">{formatDisplayAmount(t.amount)}</span>
                       </div>
                     ))}
                     <Separator />
                     <div className="flex items-center justify-between text-xs font-semibold">
                       <span className="text-muted-foreground">Total Tax ({totalTaxRate}%)</span>
-                      <span className="font-mono text-destructive">{formatCurrency(totalTax)}</span>
+                      <span className="font-mono text-destructive">{formatDisplayAmount(totalTax)}</span>
                     </div>
                     <div className={`flex items-center justify-between text-sm font-bold pt-1`}>
                       <span className="text-foreground">Net Profit (after tax)</span>
-                      <span className={`font-mono ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>{formatCurrency(netProfit)}</span>
+                      <span className={`font-mono ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>{formatDisplayAmount(netProfit)}</span>
                     </div>
                   </div>
                 );
