@@ -154,6 +154,8 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
   const [showMentions, setShowMentions] = useState(false);
   const [mentionQuery, setMentionQuery] = useState('');
   const commentInputRef = useRef<HTMLInputElement>(null);
+  const [taxPresets, setTaxPresets] = useState<{ id: string; region_name: string; country_code: string; taxes: { name: string; rate: number }[] }[]>([]);
+  const [selectedTaxPreset, setSelectedTaxPreset] = useState<string>('');
 
   const frozenActions = profile?.frozen_actions || [];
   const canComment = !frozenActions.includes('comment');
