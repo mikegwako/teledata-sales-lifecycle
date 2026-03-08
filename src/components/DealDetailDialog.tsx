@@ -138,7 +138,7 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const roleMap = useUserRoles();
-  const { formatCurrency, currencyLabel, toDisplayCurrency, toBaseCurrency } = useCurrency();
+  const { formatCurrency, formatDisplayAmount, currencyLabel, toDisplayCurrency, toBaseCurrency } = useCurrency();
 
   const [comments, setComments] = useState<Comment[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
