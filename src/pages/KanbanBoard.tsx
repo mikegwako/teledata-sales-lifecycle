@@ -15,6 +15,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { ServiceTypeCombobox } from '@/components/ServiceTypeCombobox';
 import DealDetailDialog from '@/components/DealDetailDialog';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { RoleBadge } from '@/components/RoleBadge';
+import { useUserRoles } from '@/hooks/useUserRoles';
 
 interface Deal {
   id: string;
