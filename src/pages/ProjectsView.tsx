@@ -11,6 +11,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { Label } from '@/components/ui/label';
 import { ServiceTypeCombobox } from '@/components/ServiceTypeCombobox';
+import { RoleBadge } from '@/components/RoleBadge';
+import { useUserRoles } from '@/hooks/useUserRoles';
 
 interface Comment {
   id: string;
