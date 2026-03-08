@@ -63,8 +63,8 @@ interface Deal {
   created_at: string;
   client_id: string;
   assigned_to: string | null;
-  profiles?: { full_name: string } | null;
-  assigned_profile?: { full_name: string } | null;
+  profiles?: { full_name: string; avatar_url: string | null; avatar_position: string } | null;
+  assigned_profile?: { full_name: string; avatar_url: string | null; avatar_position: string } | null;
 }
 
 interface DealDetailDialogProps {
