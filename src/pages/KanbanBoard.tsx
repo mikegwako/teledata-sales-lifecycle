@@ -176,7 +176,7 @@ export default function KanbanBoard() {
               <div className="space-y-4">
                 <div><Label>Title</Label><Input value={newDeal.title} onChange={(e) => setNewDeal({ ...newDeal, title: e.target.value })} placeholder="Deal title" /></div>
                 <div><Label>Service Type</Label><ServiceTypeCombobox value={newDeal.service_type} onChange={(v) => setNewDeal({ ...newDeal, service_type: v })} /></div>
-                <div><Label>Value ($)</Label><Input type="number" value={newDeal.value} onChange={(e) => setNewDeal({ ...newDeal, value: e.target.value })} placeholder="0" /></div>
+                <div><Label>Value ({formatCurrency(0).replace('0', '').trim()})</Label><Input type="number" value={newDeal.value} onChange={(e) => setNewDeal({ ...newDeal, value: e.target.value })} placeholder="0" /></div>
                 <div><Label>Description</Label><Textarea value={newDeal.description} onChange={(e) => setNewDeal({ ...newDeal, description: e.target.value })} rows={3} /></div>
                 <Button className="w-full gradient-primary text-primary-foreground" onClick={handleNewDeal} disabled={!newDeal.title}>Create Deal</Button>
               </div>
