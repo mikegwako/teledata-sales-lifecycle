@@ -252,7 +252,7 @@ export default function AdminDashboard() {
   const logGroups = groupLogs(activityLogs);
 
   return (
-    <div className="animate-fade-in space-y-6">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }} className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold font-display text-foreground">Admin Command Center</h1>
@@ -262,6 +262,9 @@ export default function AdminDashboard() {
           <FileBarChart className="h-4 w-4 mr-2" />Executive Report
         </Button>
       </div>
+
+      {/* Smart Dashboard: Value vs Profit, Margin Flags, Stalled Alerts */}
+      <SmartDashboardKPIs deals={deals as any} formatCurrency={formatCurrency} />
 
       {/* Metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
