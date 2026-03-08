@@ -32,8 +32,8 @@ interface Deal {
   assigned_to: string | null;
   deal_number: number;
   created_at: string;
-  profiles?: { full_name: string } | null;
-  assigned_profile?: { full_name: string } | null;
+  profiles?: { full_name: string; avatar_url: string | null; avatar_position: string } | null;
+  assigned_profile?: { full_name: string; avatar_url: string | null; avatar_position: string } | null;
 }
 
 const COLUMNS = ['Inception', 'Discovery', 'Proposal', 'Negotiation', 'Implementation', 'Completion'];
