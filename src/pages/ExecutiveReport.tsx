@@ -56,7 +56,7 @@ export default function ExecutiveReport() {
     (logRes.data || []).forEach((log: any) => {
       if (!log.user_id) return;
       if (!staffMap[log.user_id]) {
-        staffMap[log.user_id] = { count: 0, name: log.profile?.full_name || 'Unknown' };
+        staffMap[log.user_id] = { count: 0, name: log.profile?.full_name || 'Unknown', avatar_url: log.profile?.avatar_url || null, avatar_position: log.profile?.avatar_position || 'center' };
       }
       staffMap[log.user_id].count++;
     });
