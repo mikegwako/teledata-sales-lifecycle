@@ -624,12 +624,18 @@ export default function AdminDashboard() {
                             </div>
                           </div>
                         </td>
-                        <td className="py-2 px-2 sm:px-3 hidden md:table-cell">
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <Monitor className="h-3 w-3 shrink-0" />
-                            <span className="truncate max-w-[250px]">{browser}{os ? ` · ${os}` : ''}</span>
-                          </div>
-                        </td>
+                         <td className="py-2 px-2 sm:px-3 hidden lg:table-cell">
+                           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                             <Globe className="h-3 w-3 shrink-0" />
+                             <span>{log.city && log.country ? `${log.city}, ${log.country}` : log.country || 'Unknown'}</span>
+                           </div>
+                         </td>
+                         <td className="py-2 px-2 sm:px-3 hidden md:table-cell">
+                           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                             <Monitor className="h-3 w-3 shrink-0" />
+                             <span className="truncate max-w-[250px]">{browser}{os ? ` · ${os}` : ''}</span>
+                           </div>
+                         </td>
                         <td className="py-2 px-2 sm:px-3 text-xs text-muted-foreground">
                           {new Date(log.login_at).toLocaleString()}
                         </td>

@@ -87,15 +87,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
-    // Log the login for audit trail
+    // Log the login for audit trail with geolocation
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
+        let city: string | null = null;
+        let country: string | null = null;
+        try {
+          const geoRes = await fetch('https://ipapi.co/json/');
+          if (geoRes.ok) {
+            const geo = await geoRes.json();
+            city = geo.city || null;
+            country = geo.country_name || null;
+          }
+        } catch { /* geolocation is best-effort */ }
         await supabase.from('login_audit_logs').insert({
           user_id: session.user.id,
-          ip_address: null, // captured server-side if needed
+          ip_address: null,
           user_agent: navigator.userAgent,
-        });
+          city,
+          country,
+        } as any);
       }
     } catch (e) {
       console.warn('Audit log failed:', e);
