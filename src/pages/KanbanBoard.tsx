@@ -52,7 +52,7 @@ export default function KanbanBoard() {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const roleMap = useUserRoles();
-  const { formatCurrency } = useCurrency();
+  const { formatCurrency, toBaseCurrency, currencyLabel } = useCurrency();
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
   const [newDealOpen, setNewDealOpen] = useState(false);
