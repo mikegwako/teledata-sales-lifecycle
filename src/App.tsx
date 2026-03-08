@@ -51,6 +51,7 @@ function AppRoutes() {
         )}
         
         <Route path="/projects" element={<ProjectsView />} />
+        <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </DashboardLayout>

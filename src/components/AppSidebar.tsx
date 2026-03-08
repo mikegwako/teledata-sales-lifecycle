@@ -20,10 +20,29 @@ import { LayoutDashboard, KanbanSquare, FilePlus, FolderOpen, LogOut, ChevronLef
 import { Button } from '@/components/ui/button';
 
 export function AppSidebar() {
-  const { role, profile, signOut } = useAuth();
+  const { role, profile, user, signOut } = useAuth();
   const { state, toggleSidebar } = useSidebar();
   const collapsed = state === 'collapsed';
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchUnread = async () => {
+      const { count } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('read', false);
+      setUnreadCount(count || 0);
+    };
+    fetchUnread();
+    const channel = supabase
+      .channel('sidebar-notif-count')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, () => fetchUnread())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
 
   const navItems = [];
 
