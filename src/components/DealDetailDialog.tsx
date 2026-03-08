@@ -79,6 +79,25 @@ const stageColors: Record<string, string> = {
   Completion: 'bg-success/10 text-success-foreground',
 };
 
+const actionLabels: Record<string, string> = {
+  status_change: '📋 Stage update',
+  claimed: '🤝 Deal claimed',
+  note: '📝 Quick note',
+  project_created: '🆕 Project created',
+  document_upload: '📎 File upload',
+  comment_added: '💬 Comment added',
+  financial_update: '💰 Financial update',
+  deal_updated: '✏️ Deal updated',
+};
+
+const formatActivityText = (log: ActivityLog) => {
+  const details = (log.details || '').trim();
+  if (!details || /deal was modified/i.test(details)) {
+    return actionLabels[log.action] || log.action.replace(/_/g, ' ');
+  }
+  return details;
+};
+
 function groupActivityLogs(logs: ActivityLog[]) {
   const groups: { key: string; logs: ActivityLog[]; summary: string; user: string; userId: string | null; time: string }[] = [];
   for (const log of logs) {
@@ -92,11 +111,8 @@ function groupActivityLogs(logs: ActivityLog[]) {
       lastGroup.logs.push(log);
       const count = lastGroup.logs.length;
       const userName = log.profile?.full_name || 'System';
-      if (log.action === 'document_upload') {
-        lastGroup.summary = `${userName} uploaded ${count} files`;
-      } else {
-        lastGroup.summary = `${userName} performed ${count} actions`;
-      }
+      const activityLabel = (actionLabels[log.action] || log.action.replace(/_/g, ' ')).replace(/^[^\w]+\s*/, '').toLowerCase();
+      lastGroup.summary = `${userName} performed ${count} ${activityLabel}${count > 1 ? 's' : ''}`;
     } else {
       groups.push({
         key: log.id,
@@ -519,8 +535,9 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
                           <p className="text-foreground flex items-center gap-1.5 flex-wrap">
                             <span className="font-medium">{group.user}</span>
                             {group.userId && roleMap[group.userId] && <RoleBadge role={roleMap[group.userId]} />}
+                            <Badge variant="secondary" className="text-[10px]">{actionLabels[group.logs[0].action] || group.logs[0].action.replace(/_/g, ' ')}</Badge>
                           </p>
-                          <p className="text-xs text-muted-foreground">{group.logs[0].details}</p>
+                          <p className="text-xs text-muted-foreground">{formatActivityText(group.logs[0])}</p>
                           <p className="text-[10px] text-muted-foreground">{new Date(group.time).toLocaleString()}</p>
                         </div>
                       </div>
@@ -542,7 +559,7 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
                           <div className="mt-2 pl-4 space-y-1 border-l-2 border-border ml-1">
                             {group.logs.map((log) => (
                               <div key={log.id} className="text-xs text-muted-foreground">
-                                <span>{log.details}</span>
+                                <span>{actionLabels[log.action] || log.action.replace(/_/g, ' ')}: {formatActivityText(log)}</span>
                                 <span className="ml-2 text-[10px]">{new Date(log.created_at).toLocaleString()}</span>
                               </div>
                             ))}
