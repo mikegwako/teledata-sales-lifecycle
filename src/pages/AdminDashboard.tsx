@@ -506,23 +506,23 @@ export default function AdminDashboard() {
                       <td className="py-2 px-2 sm:px-3 hidden md:table-cell">
                         {userRole !== 'admin' && (
                           <div className="flex flex-col gap-1">
-                            <label className="flex items-center gap-1.5 text-[10px] text-muted-foreground cursor-pointer">
+                            <label className={`flex items-center gap-1.5 text-[10px] cursor-pointer ${frozen.includes('comment') ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
                               <Checkbox
                                 checked={frozen.includes('comment')}
                                 onCheckedChange={() => handleToggleFreeze(person.id, 'comment', frozen)}
                                 disabled={savingFreeze === person.id}
                                 className="h-3.5 w-3.5"
                               />
-                              Block comments
+                              {frozen.includes('comment') ? '🚫 Comments blocked' : '💬 Can comment'}
                             </label>
-                            <label className="flex items-center gap-1.5 text-[10px] text-muted-foreground cursor-pointer">
+                            <label className={`flex items-center gap-1.5 text-[10px] cursor-pointer ${frozen.includes('upload') ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
                               <Checkbox
                                 checked={frozen.includes('upload')}
                                 onCheckedChange={() => handleToggleFreeze(person.id, 'upload', frozen)}
                                 disabled={savingFreeze === person.id}
                                 className="h-3.5 w-3.5"
                               />
-                              Block uploads
+                              {frozen.includes('upload') ? '🚫 Uploads blocked' : '📎 Can upload'}
                             </label>
                           </div>
                         )}
