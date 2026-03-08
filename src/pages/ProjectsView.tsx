@@ -353,9 +353,10 @@ export default function ProjectsView() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2">
-                            <div>
+                            <div className="flex items-center gap-1.5 flex-wrap">
                               <span className="font-medium text-foreground">{c.profile?.full_name || 'User'}</span>
-                              <span className="text-muted-foreground text-xs ml-2">{new Date(c.created_at).toLocaleDateString()}</span>
+                              {roleMap[c.user_id] && <RoleBadge role={roleMap[c.user_id]} />}
+                              <span className="text-muted-foreground text-xs">{new Date(c.created_at).toLocaleDateString()}</span>
                             </div>
                             {(role === 'admin' || c.user_id === user?.id) && (
                               <Button variant="ghost" size="icon" className="h-5 w-5 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteComment(deal.id, c.id)}>
