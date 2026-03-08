@@ -76,22 +76,6 @@ export function AppSidebar() {
       <Sidebar collapsible="icon" className="border-r-0">
         <SidebarContent className="bg-sidebar">
           <SidebarGroup>
-            {/* Logo */}
-            <div className="flex items-center gap-2 px-3 py-4">
-              <img src={teledataLogo} alt="Teledata Africa" className="h-9 w-9 rounded-lg object-cover shrink-0" />
-              {!collapsed && (
-                <div className="animate-slide-in">
-                  <h2 className="font-display font-bold text-sm text-sidebar-primary-foreground">Teledata Africa</h2>
-                  <p className="text-xs text-sidebar-foreground/60">Sales Engine</p>
-                </div>
-              )}
-              {!collapsed && (
-                <Button variant="ghost" size="icon" className="ml-auto h-7 w-7 text-sidebar-foreground/60 hover:text-sidebar-foreground" onClick={toggleSidebar}>
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-
             <SidebarGroupLabel className="text-sidebar-foreground/40 text-xs uppercase tracking-wider">
               {!collapsed && 'Navigation'}
             </SidebarGroupLabel>
@@ -129,6 +113,20 @@ export function AppSidebar() {
           </SidebarGroup>
         </SidebarContent>
         <SidebarFooter className="bg-sidebar border-t border-sidebar-border">
+          <div className="flex items-center gap-2 px-3 py-2 border-b border-sidebar-border pb-3">
+            <img src={teledataLogo} alt="Teledata Africa" className="h-9 w-9 rounded-lg object-cover shrink-0" />
+            {!collapsed && (
+              <div className="animate-slide-in">
+                <h2 className="font-display font-bold text-sm text-sidebar-primary-foreground">Teledata Africa</h2>
+                <p className="text-xs text-sidebar-foreground/60">Sales Engine</p>
+              </div>
+            )}
+            {!collapsed && (
+              <Button variant="ghost" size="icon" className="ml-auto h-7 w-7 text-sidebar-foreground/60 hover:text-sidebar-foreground" onClick={toggleSidebar}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
           <div className="flex items-center gap-2 px-3 py-2">
             <div className="h-8 w-8 rounded-full overflow-hidden shrink-0 cursor-pointer" onClick={() => setSettingsOpen(true)}>
               {profile?.avatar_url ? (
