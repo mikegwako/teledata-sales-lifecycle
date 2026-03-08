@@ -101,7 +101,7 @@ export default function AdminDashboard() {
   const fetchAll = async () => {
     const [dealRes, staffRes, logRes, auditRes] = await Promise.all([
       supabase.from('deals').select('*, assigned_profile:profiles!deals_assigned_to_fkey(full_name), profiles!deals_client_id_fkey(full_name)'),
-      supabase.from('profiles').select('id, full_name, phone_number, currency_preference, frozen_actions'),
+      supabase.from('profiles').select('id, full_name, phone_number, currency_preference, frozen_actions, avatar_url'),
       supabase.from('activity_logs').select('*, profile:profiles!activity_logs_user_id_fkey(full_name), deal:deals!activity_logs_deal_id_fkey(title, deal_number)').order('created_at', { ascending: false }).limit(30),
       supabase.from('login_audit_logs').select('*').order('login_at', { ascending: false }).limit(20),
     ]);
@@ -109,6 +109,22 @@ export default function AdminDashboard() {
     setStaffList((staffRes.data as any) || []);
     setActivityLogs((logRes.data as any) || []);
     setAuditLogs((auditRes.data as any) || []);
+
+    // Fetch user emails via edge function or auth admin — use profiles list to build email map
+    // We'll fetch emails from the auth context by calling a simple edge function
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/list-user-emails`, {
+        headers: { 'Authorization': `Bearer ${session?.access_token}` },
+      });
+      if (res.ok) {
+        const emails = await res.json();
+        const emailMap: Record<string, string> = {};
+        (emails || []).forEach((u: { id: string; email: string }) => { emailMap[u.id] = u.email; });
+        setUserEmails(emailMap);
+      }
+    } catch {}
+
     setLoading(false);
   };
 
@@ -462,7 +478,7 @@ export default function AdminDashboard() {
               <thead>
                 <tr className="border-b border-border">
                   <th className="text-left py-2 px-2 sm:px-3 text-muted-foreground font-medium text-xs">User</th>
-                  <th className="text-left py-2 px-2 sm:px-3 text-muted-foreground font-medium text-xs hidden sm:table-cell">Phone</th>
+                  <th className="text-left py-2 px-2 sm:px-3 text-muted-foreground font-medium text-xs hidden sm:table-cell">Contact</th>
                   <th className="text-left py-2 px-2 sm:px-3 text-muted-foreground font-medium text-xs">Role</th>
                   <th className="text-left py-2 px-2 sm:px-3 text-muted-foreground font-medium text-xs hidden md:table-cell">Restrictions</th>
                   <th className="text-left py-2 px-2 sm:px-3 text-muted-foreground font-medium text-xs">Deals</th>
@@ -494,7 +510,14 @@ export default function AdminDashboard() {
                         </div>
                       </td>
                       <td className="py-2 px-2 sm:px-3 hidden sm:table-cell">
-                        <span className="text-xs text-muted-foreground">{person.phone_number || '—'}</span>
+                        <div className="space-y-0.5">
+                          {userEmails[person.id] && (
+                            <span className="text-xs text-muted-foreground flex items-center gap-0.5">
+                              <Mail className="h-2.5 w-2.5" />{userEmails[person.id]}
+                            </span>
+                          )}
+                          <span className="text-xs text-muted-foreground">{person.phone_number || '—'}</span>
+                        </div>
                       </td>
                       <td className="py-2 px-2 sm:px-3">
                         {userRole !== 'admin' ? (
@@ -603,6 +626,7 @@ export default function AdminDashboard() {
                      <th className="text-left py-2 px-2 sm:px-3 text-muted-foreground font-medium text-xs hidden lg:table-cell">Location</th>
                      <th className="text-left py-2 px-2 sm:px-3 text-muted-foreground font-medium text-xs hidden md:table-cell">Device / Browser</th>
                      <th className="text-left py-2 px-2 sm:px-3 text-muted-foreground font-medium text-xs">Login Time</th>
+                     <th className="text-right py-2 px-2 sm:px-3 text-muted-foreground font-medium text-xs">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -638,6 +662,15 @@ export default function AdminDashboard() {
                          </td>
                         <td className="py-2 px-2 sm:px-3 text-xs text-muted-foreground">
                           {new Date(log.login_at).toLocaleString()}
+                        </td>
+                        <td className="py-2 px-2 sm:px-3 text-right">
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={async () => {
+                            await supabase.from('login_audit_logs').delete().eq('id', log.id);
+                            toast({ title: 'Audit log deleted' });
+                            fetchAll();
+                          }}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
                         </td>
                       </tr>
                     );

@@ -130,10 +130,16 @@ export function AppSidebar() {
 
         <SidebarFooter className="bg-sidebar border-t border-sidebar-border">
           <div className="flex items-center gap-2 px-3 py-3">
-            <div className="h-8 w-8 rounded-full gradient-accent flex items-center justify-center shrink-0">
-              <span className="text-xs font-bold text-accent-foreground">
-                {profile?.full_name?.charAt(0)?.toUpperCase() || '?'}
-              </span>
+            <div className="h-8 w-8 rounded-full overflow-hidden shrink-0">
+              {profile?.avatar_url ? (
+                <img src={profile.avatar_url} alt="Avatar" className="h-full w-full object-cover" />
+              ) : (
+                <div className="h-full w-full gradient-accent flex items-center justify-center">
+                  <span className="text-xs font-bold text-accent-foreground">
+                    {profile?.full_name?.charAt(0)?.toUpperCase() || '?'}
+                  </span>
+                </div>
+              )}
             </div>
             {!collapsed && (
               <div className="flex-1 min-w-0 animate-slide-in">

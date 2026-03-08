@@ -285,6 +285,7 @@ export type Database = {
       profiles: {
         Row: {
           auto_delete_days: number | null
+          avatar_url: string | null
           created_at: string | null
           currency_preference: string
           frozen_actions: string[]
@@ -295,6 +296,7 @@ export type Database = {
         }
         Insert: {
           auto_delete_days?: number | null
+          avatar_url?: string | null
           created_at?: string | null
           currency_preference?: string
           frozen_actions?: string[]
@@ -305,6 +307,7 @@ export type Database = {
         }
         Update: {
           auto_delete_days?: number | null
+          avatar_url?: string | null
           created_at?: string | null
           currency_preference?: string
           frozen_actions?: string[]

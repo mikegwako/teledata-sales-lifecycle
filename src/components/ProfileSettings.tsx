@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -7,8 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Save } from 'lucide-react';
+import { Loader2, Save, Camera, X } from 'lucide-react';
 
 interface ProfileSettingsProps {
   open: boolean;
@@ -18,11 +19,62 @@ interface ProfileSettingsProps {
 export default function ProfileSettings({ open, onOpenChange }: ProfileSettingsProps) {
   const { user, profile, role, refreshProfile } = useAuth();
   const { toast } = useToast();
-  const [fullName, setFullName] = useState(profile?.full_name || '');
-  const [phoneNumber, setPhoneNumber] = useState(profile?.phone_number || '');
-  const [currency, setCurrency] = useState(profile?.currency_preference || 'USD');
-  const [autoDelete, setAutoDelete] = useState(!!profile?.auto_delete_days);
+  const [fullName, setFullName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [currency, setCurrency] = useState('USD');
+  const [autoDelete, setAutoDelete] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync form state when profile loads or dialog opens
+  useEffect(() => {
+    if (profile && open) {
+      setFullName(profile.full_name || '');
+      setPhoneNumber(profile.phone_number || '');
+      setCurrency(profile.currency_preference || 'USD');
+      setAutoDelete(!!profile.auto_delete_days);
+      setAvatarPreview(profile.avatar_url || null);
+    }
+  }, [profile, open]);
+
+  const handleAvatarUpload = async (file: File) => {
+    if (!user) return;
+    setUploadingAvatar(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const path = `${user.id}/avatar.${ext}`;
+      
+      // Delete old avatar if exists
+      await supabase.storage.from('avatars').remove([`${user.id}/avatar.jpg`, `${user.id}/avatar.png`, `${user.id}/avatar.jpeg`, `${user.id}/avatar.webp`]);
+      
+      const { error: uploadError } = await supabase.storage.from('avatars').upload(path, file, { upsert: true });
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path);
+      const avatarUrl = `${publicUrl}?t=${Date.now()}`;
+
+      await supabase.from('profiles').update({ avatar_url: avatarUrl } as any).eq('id', user.id);
+      setAvatarPreview(avatarUrl);
+      await refreshProfile();
+      toast({ title: 'Profile photo updated' });
+    } catch (err: any) {
+      toast({ title: 'Upload failed', description: err.message, variant: 'destructive' });
+    }
+    setUploadingAvatar(false);
+  };
+
+  const handleRemoveAvatar = async () => {
+    if (!user) return;
+    setUploadingAvatar(true);
+    await supabase.storage.from('avatars').remove([`${user.id}/avatar.jpg`, `${user.id}/avatar.png`, `${user.id}/avatar.jpeg`, `${user.id}/avatar.webp`]);
+    await supabase.from('profiles').update({ avatar_url: null } as any).eq('id', user.id);
+    setAvatarPreview(null);
+    await refreshProfile();
+    toast({ title: 'Profile photo removed' });
+    setUploadingAvatar(false);
+  };
 
   const handleSave = async () => {
     if (!user) return;
@@ -44,6 +96,8 @@ export default function ProfileSettings({ open, onOpenChange }: ProfileSettingsP
     setSaving(false);
   };
 
+  const initials = (profile?.full_name?.charAt(0) || role?.charAt(0) || '?').toUpperCase();
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md w-[95vw]">
@@ -51,6 +105,46 @@ export default function ProfileSettings({ open, onOpenChange }: ProfileSettingsP
           <DialogTitle className="font-display">Edit Profile</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 mt-2">
+          {/* Avatar section */}
+          <div className="flex flex-col items-center gap-3">
+            <div className="relative group">
+              <Avatar className="h-20 w-20 border-2 border-border">
+                {avatarPreview ? (
+                  <AvatarImage src={avatarPreview} alt="Profile" />
+                ) : null}
+                <AvatarFallback className="text-lg font-bold gradient-primary text-primary-foreground">{initials}</AvatarFallback>
+              </Avatar>
+              <button
+                className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingAvatar}
+              >
+                {uploadingAvatar ? <Loader2 className="h-5 w-5 animate-spin text-white" /> : <Camera className="h-5 w-5 text-white" />}
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleAvatarUpload(file);
+                  e.target.value = '';
+                }}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" className="text-xs" onClick={() => fileInputRef.current?.click()} disabled={uploadingAvatar}>
+                <Camera className="h-3 w-3 mr-1" />Upload Photo
+              </Button>
+              {avatarPreview && (
+                <Button variant="outline" size="sm" className="text-xs text-destructive" onClick={handleRemoveAvatar} disabled={uploadingAvatar}>
+                  <X className="h-3 w-3 mr-1" />Remove
+                </Button>
+              )}
+            </div>
+          </div>
+
           <div className="space-y-2">
             <Label>Email</Label>
             <Input value={user?.email || ''} disabled className="opacity-60" />
