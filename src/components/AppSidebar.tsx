@@ -151,6 +151,7 @@ export function AppSidebar() {
                 <h2 className="font-display font-bold text-sm text-sidebar-primary-foreground">Teledata Africa</h2>
                 <p className="text-xs text-sidebar-foreground/60">Sales Engine</p>
               </div>
+            )}
           </div>
         </SidebarFooter>
       </Sidebar>
