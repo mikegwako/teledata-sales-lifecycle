@@ -9,6 +9,7 @@ export interface UserProfile {
   phone_number: string | null;
   currency_preference: string;
   frozen_actions: string[];
+  auto_delete_days: number | null;
 }
 
 interface AuthContextType {
@@ -35,7 +36,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const fetchUserData = async (userId: string) => {
     const [{ data: roleData }, { data: profileData }] = await Promise.all([
       supabase.from('user_roles').select('role').eq('user_id', userId).single(),
-      supabase.from('profiles').select('full_name, phone_number, currency_preference, frozen_actions').eq('id', userId).single(),
+      supabase.from('profiles').select('full_name, phone_number, currency_preference, frozen_actions, auto_delete_days').eq('id', userId).single(),
     ]);
     if (roleData) setRole(roleData.role as AppRole);
     if (profileData) setProfile(profileData as unknown as UserProfile);

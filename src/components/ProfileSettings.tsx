@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Save } from 'lucide-react';
 
@@ -20,6 +21,7 @@ export default function ProfileSettings({ open, onOpenChange }: ProfileSettingsP
   const [fullName, setFullName] = useState(profile?.full_name || '');
   const [phoneNumber, setPhoneNumber] = useState(profile?.phone_number || '');
   const [currency, setCurrency] = useState(profile?.currency_preference || 'USD');
+  const [autoDelete, setAutoDelete] = useState(!!profile?.auto_delete_days);
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
@@ -29,7 +31,8 @@ export default function ProfileSettings({ open, onOpenChange }: ProfileSettingsP
       full_name: fullName,
       phone_number: phoneNumber,
       currency_preference: currency,
-    }).eq('id', user.id);
+      auto_delete_days: autoDelete ? 40 : null,
+    } as any).eq('id', user.id);
     
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -77,6 +80,13 @@ export default function ProfileSettings({ open, onOpenChange }: ProfileSettingsP
                 <SelectItem value="KSH">KSH (KSh)</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div className="flex items-center justify-between rounded-lg border border-border p-3">
+            <div>
+              <Label className="text-sm">Auto-delete after 40 days</Label>
+              <p className="text-[10px] text-muted-foreground mt-0.5">Automatically delete your notifications and activity logs older than 40 days</p>
+            </div>
+            <Switch checked={autoDelete} onCheckedChange={setAutoDelete} />
           </div>
           <Button className="w-full gradient-primary text-primary-foreground" onClick={handleSave} disabled={saving}>
             {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
