@@ -165,8 +165,9 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
 
   useEffect(() => {
     if (deal && open) {
-      setValueEdit(String(deal.value || 0));
-      setCostEdit(String(deal.cost || 0));
+      // DB stores USD; convert to user's display currency for editing
+      setValueEdit(String(Math.round(toDisplayCurrency(deal.value || 0) * 100) / 100));
+      setCostEdit(String(Math.round(toDisplayCurrency(deal.cost || 0) * 100) / 100));
       fetchComments();
       fetchDocuments();
       fetchActivityLogs();
