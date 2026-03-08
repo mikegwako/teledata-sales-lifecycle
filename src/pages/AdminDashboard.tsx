@@ -4,13 +4,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, TrendingUp, FolderOpen, Target, DollarSign, Activity, Users, ArrowUpRight, ArrowDownRight, FileBarChart, Trash2, AlertTriangle } from 'lucide-react';
+import { Loader2, TrendingUp, FolderOpen, Target, DollarSign, Activity, Users, ArrowUpRight, ArrowDownRight, FileBarChart, Trash2, AlertTriangle, ShieldAlert, Shield, Mail, Phone } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { RoleBadge } from '@/components/RoleBadge';
 import { useUserRoles } from '@/hooks/useUserRoles';
+import { useCurrency } from '@/hooks/useCurrency';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface Deal {
   id: string;
@@ -21,6 +23,7 @@ interface Deal {
   assigned_to: string | null;
   deal_number: number;
   created_at: string;
+  client_id: string;
   assigned_profile?: { full_name: string } | null;
   profiles?: { full_name: string } | null;
 }
@@ -28,6 +31,14 @@ interface Deal {
 interface Profile {
   id: string;
   full_name: string;
+  phone_number: string | null;
+  currency_preference: string;
+  frozen_actions: string[];
+}
+
+interface UserEmail {
+  id: string;
+  email: string;
 }
 
 interface ActivityLog {
@@ -72,21 +83,25 @@ function groupLogs(logs: ActivityLog[]) {
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { formatCurrency, currencyLabel } = useCurrency();
   const [deals, setDeals] = useState<Deal[]>([]);
   const [staffList, setStaffList] = useState<Profile[]>([]);
+  const [userEmails, setUserEmails] = useState<Record<string, string>>({});
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingUser, setDeletingUser] = useState<string | null>(null);
+  const [savingFreeze, setSavingFreeze] = useState<string | null>(null);
+  const [changingRole, setChangingRole] = useState<string | null>(null);
   const roleMap = useUserRoles();
 
   const fetchAll = async () => {
     const [dealRes, staffRes, logRes] = await Promise.all([
       supabase.from('deals').select('*, assigned_profile:profiles!deals_assigned_to_fkey(full_name), profiles!deals_client_id_fkey(full_name)'),
-      supabase.from('profiles').select('id, full_name'),
+      supabase.from('profiles').select('id, full_name, phone_number, currency_preference, frozen_actions'),
       supabase.from('activity_logs').select('*, profile:profiles!activity_logs_user_id_fkey(full_name), deal:deals!activity_logs_deal_id_fkey(title, deal_number)').order('created_at', { ascending: false }).limit(30),
     ]);
     setDeals((dealRes.data as any) || []);
-    setStaffList(staffRes.data || []);
+    setStaffList((staffRes.data as any) || []);
     setActivityLogs((logRes.data as any) || []);
     setLoading(false);
   };
@@ -132,6 +147,56 @@ export default function AdminDashboard() {
     setDeletingUser(null);
   };
 
+  const handleToggleFreeze = async (userId: string, action: string, currentFrozen: string[]) => {
+    setSavingFreeze(userId);
+    const newFrozen = currentFrozen.includes(action)
+      ? currentFrozen.filter((a) => a !== action)
+      : [...currentFrozen, action];
+    const { error } = await supabase.from('profiles').update({ frozen_actions: newFrozen }).eq('id', userId);
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: newFrozen.includes(action) ? `${action} restricted` : `${action} restored` });
+      fetchAll();
+    }
+    setSavingFreeze(null);
+  };
+
+  const handleFreezeAll = async (userId: string, currentFrozen: string[]) => {
+    setSavingFreeze(userId);
+    const allActions = ['comment', 'upload'];
+    const isFullyFrozen = allActions.every((a) => currentFrozen.includes(a));
+    const newFrozen = isFullyFrozen ? [] : allActions;
+    const { error } = await supabase.from('profiles').update({ frozen_actions: newFrozen }).eq('id', userId);
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: isFullyFrozen ? 'All actions restored' : 'All actions restricted' });
+      fetchAll();
+    }
+    setSavingFreeze(null);
+  };
+
+  const handleChangeRole = async (userId: string, newRole: string) => {
+    setChangingRole(userId);
+    // First check if user_roles entry exists
+    const { data: existing } = await supabase.from('user_roles').select('id').eq('user_id', userId).single();
+    let error;
+    if (existing) {
+      ({ error } = await supabase.from('user_roles').update({ role: newRole }).eq('user_id', userId));
+    } else {
+      ({ error } = await supabase.from('user_roles').insert({ user_id: userId, role: newRole }));
+    }
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: `Role changed to ${newRole}` });
+      // Force re-fetch role map
+      window.location.reload();
+    }
+    setChangingRole(null);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -166,8 +231,8 @@ export default function AdminDashboard() {
   const chartData = Object.entries(repMap).map(([name, count]) => ({ name, deals: count }));
 
   const metrics = [
-    { label: 'Total Pipeline', value: `$${totalPipeline.toLocaleString()}`, icon: DollarSign, color: 'text-primary', trend: growthPct },
-    { label: 'Profit Margin', value: `${profitMargin}%`, icon: TrendingUp, color: 'text-success', sub: `$${profit.toLocaleString()} profit` },
+    { label: 'Total Pipeline', value: formatCurrency(totalPipeline), icon: DollarSign, color: 'text-primary', trend: growthPct },
+    { label: 'Profit Margin', value: `${profitMargin}%`, icon: TrendingUp, color: 'text-success', sub: `${formatCurrency(profit)} profit` },
     { label: 'Active Projects', value: activeProjects, icon: FolderOpen, color: 'text-accent' },
     { label: 'Win Rate', value: `${winRate}%`, icon: Target, color: 'text-success' },
   ];
@@ -346,7 +411,7 @@ export default function AdminDashboard() {
                         <RoleBadge role="client" />
                       </div>
                     </td>
-                    <td className="py-2 px-2 sm:px-3 font-mono text-xs">${Number(deal.value || 0).toLocaleString()}</td>
+                    <td className="py-2 px-2 sm:px-3 font-mono text-xs">{formatCurrency(Number(deal.value || 0))}</td>
                     <td className="py-2 px-2 sm:px-3 hidden md:table-cell"><Badge variant="secondary" className="text-[10px]">{deal.status}</Badge></td>
                     <td className="py-2 px-2 sm:px-3">
                       <div className="flex items-center gap-1.5">
@@ -387,16 +452,21 @@ export default function AdminDashboard() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border">
-                  <th className="text-left py-2 px-2 sm:px-3 text-muted-foreground font-medium text-xs">Name</th>
+                  <th className="text-left py-2 px-2 sm:px-3 text-muted-foreground font-medium text-xs">User</th>
+                  <th className="text-left py-2 px-2 sm:px-3 text-muted-foreground font-medium text-xs hidden sm:table-cell">Phone</th>
                   <th className="text-left py-2 px-2 sm:px-3 text-muted-foreground font-medium text-xs">Role</th>
-                  <th className="text-left py-2 px-2 sm:px-3 text-muted-foreground font-medium text-xs">Active Deals</th>
+                  <th className="text-left py-2 px-2 sm:px-3 text-muted-foreground font-medium text-xs hidden md:table-cell">Restrictions</th>
+                  <th className="text-left py-2 px-2 sm:px-3 text-muted-foreground font-medium text-xs">Deals</th>
                   <th className="text-right py-2 px-2 sm:px-3 text-muted-foreground font-medium text-xs">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {staffList.map((person) => {
                   const userRole = roleMap[person.id] || 'client';
-                  const dealCount = deals.filter((d) => d.assigned_to === person.id || (d as any).client_id === person.id).length;
+                  const dealCount = deals.filter((d) => d.assigned_to === person.id || d.client_id === person.id).length;
+                  const frozen = person.frozen_actions || [];
+                  const allFrozen = ['comment', 'upload'].every((a) => frozen.includes(a));
+
                   return (
                     <tr key={person.id} className="border-b border-border/50 hover:bg-muted/30">
                       <td className="py-2 px-2 sm:px-3">
@@ -404,36 +474,96 @@ export default function AdminDashboard() {
                           <div className="h-7 w-7 rounded-full gradient-primary flex items-center justify-center shrink-0">
                             <span className="text-[10px] font-bold text-primary-foreground">{person.full_name?.charAt(0)?.toUpperCase() || '?'}</span>
                           </div>
-                          <span className="font-medium text-foreground text-xs sm:text-sm">{person.full_name || 'Unknown'}</span>
+                          <div className="min-w-0">
+                            <span className="font-medium text-foreground text-xs sm:text-sm block truncate">{person.full_name || 'Unknown'}</span>
+                            {person.phone_number && (
+                              <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                                <Phone className="h-2.5 w-2.5" />{person.phone_number}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </td>
-                      <td className="py-2 px-2 sm:px-3"><RoleBadge role={userRole} /></td>
+                      <td className="py-2 px-2 sm:px-3 hidden sm:table-cell">
+                        <span className="text-xs text-muted-foreground">{person.phone_number || '—'}</span>
+                      </td>
+                      <td className="py-2 px-2 sm:px-3">
+                        {userRole !== 'admin' ? (
+                          <Select value={userRole} onValueChange={(v) => handleChangeRole(person.id, v)} disabled={changingRole === person.id}>
+                            <SelectTrigger className="h-7 w-[90px] text-[10px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="client">Client</SelectItem>
+                              <SelectItem value="staff">Staff</SelectItem>
+                              <SelectItem value="admin">Admin</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <RoleBadge role={userRole} />
+                        )}
+                      </td>
+                      <td className="py-2 px-2 sm:px-3 hidden md:table-cell">
+                        {userRole !== 'admin' && (
+                          <div className="flex flex-col gap-1">
+                            <label className="flex items-center gap-1.5 text-[10px] text-muted-foreground cursor-pointer">
+                              <Checkbox
+                                checked={frozen.includes('comment')}
+                                onCheckedChange={() => handleToggleFreeze(person.id, 'comment', frozen)}
+                                disabled={savingFreeze === person.id}
+                                className="h-3.5 w-3.5"
+                              />
+                              Block comments
+                            </label>
+                            <label className="flex items-center gap-1.5 text-[10px] text-muted-foreground cursor-pointer">
+                              <Checkbox
+                                checked={frozen.includes('upload')}
+                                onCheckedChange={() => handleToggleFreeze(person.id, 'upload', frozen)}
+                                disabled={savingFreeze === person.id}
+                                className="h-3.5 w-3.5"
+                              />
+                              Block uploads
+                            </label>
+                          </div>
+                        )}
+                      </td>
                       <td className="py-2 px-2 sm:px-3 text-xs text-muted-foreground">{dealCount}</td>
                       <td className="py-2 px-2 sm:px-3 text-right">
                         {userRole !== 'admin' && (
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" disabled={deletingUser === person.id}>
-                                {deletingUser === person.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle className="flex items-center gap-2">
-                                  <AlertTriangle className="h-5 w-5 text-destructive" />Delete User
-                                </AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to delete <strong>{person.full_name}</strong>? This action cannot be undone. All their data (deals, comments, documents) may be affected.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => handleDeleteUser(person.id)}>
-                                  Delete User
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                          <div className="flex items-center gap-1 justify-end">
+                            <Button
+                              variant="ghost" size="icon"
+                              className={`h-7 w-7 ${allFrozen ? 'text-destructive' : 'text-muted-foreground hover:text-warning'}`}
+                              onClick={() => handleFreezeAll(person.id, frozen)}
+                              disabled={savingFreeze === person.id}
+                              title={allFrozen ? 'Unfreeze all' : 'Freeze all'}
+                            >
+                              {allFrozen ? <Shield className="h-3.5 w-3.5" /> : <ShieldAlert className="h-3.5 w-3.5" />}
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" disabled={deletingUser === person.id}>
+                                  {deletingUser === person.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle className="flex items-center gap-2">
+                                    <AlertTriangle className="h-5 w-5 text-destructive" />Delete User
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to delete <strong>{person.full_name}</strong>? This action cannot be undone. All their data (deals, comments, documents) may be affected.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => handleDeleteUser(person.id)}>
+                                    Delete User
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
                         )}
                       </td>
                     </tr>
