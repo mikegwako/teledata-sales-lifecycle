@@ -375,9 +375,7 @@ export default function AdminDashboard() {
                     ) : (
                       <details className="border-b border-border pb-2">
                         <summary className="flex items-center gap-3 text-sm cursor-pointer list-none">
-                          <div className="h-8 w-8 rounded-full gradient-accent flex items-center justify-center shrink-0">
-                            <span className="text-[10px] font-bold text-accent-foreground">{group.user.charAt(0)?.toUpperCase() || '?'}</span>
-                          </div>
+                          <UserAvatar fullName={group.user} avatarUrl={group.logs[0].profile?.avatar_url} avatarPosition={group.logs[0].profile?.avatar_position} className="h-8 w-8" fallbackClassName="text-[10px]" />
                           <div className="flex-1">
                             <p className="font-medium text-foreground flex items-center gap-1.5 flex-wrap">
                               {group.summary}
