@@ -494,7 +494,14 @@ export default function AdminDashboard() {
                         </div>
                       </td>
                       <td className="py-2 px-2 sm:px-3 hidden sm:table-cell">
-                        <span className="text-xs text-muted-foreground">{person.phone_number || '—'}</span>
+                        <div className="space-y-0.5">
+                          {userEmails[person.id] && (
+                            <span className="text-xs text-muted-foreground flex items-center gap-0.5">
+                              <Mail className="h-2.5 w-2.5" />{userEmails[person.id]}
+                            </span>
+                          )}
+                          <span className="text-xs text-muted-foreground">{person.phone_number || '—'}</span>
+                        </div>
                       </td>
                       <td className="py-2 px-2 sm:px-3">
                         {userRole !== 'admin' ? (
