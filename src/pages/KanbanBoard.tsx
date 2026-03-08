@@ -80,6 +80,9 @@ export default function KanbanBoard() {
 
     setDeals((prev) => prev.map((d) => (d.id === dealId ? { ...d, status: newStatus } : d)));
 
+    const currentDeal = deals.find((d) => d.id === dealId);
+    const oldStatus = currentDeal?.status || 'Unknown';
+
     const { error } = await supabase.from('deals').update({ status: newStatus }).eq('id', dealId);
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -90,7 +93,7 @@ export default function KanbanBoard() {
     if (user) {
       await supabase.from('activity_logs').insert({
         deal_id: dealId, user_id: user.id, action: 'status_change',
-        details: `Moved deal to ${newStatus}`,
+        details: `Moved deal from "${oldStatus}" to "${newStatus}"`,
       });
     }
 
