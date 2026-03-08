@@ -531,7 +531,7 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
                     </div>
                     <div className={`flex items-center justify-between text-sm font-bold pt-1`}>
                       <span className="text-foreground">Net Profit (after tax)</span>
-                      <span className={`font-mono ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>{formatCurrency(netProfit)}</span>
+                      <span className={`font-mono ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>{formatDisplayAmount(netProfit)}</span>
                     </div>
                   </div>
                 );
