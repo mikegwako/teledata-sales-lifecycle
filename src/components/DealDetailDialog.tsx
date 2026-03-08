@@ -293,7 +293,17 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
       return;
     }
     setUploading(true);
-    const file = e.target.files[0];
+    let file = e.target.files[0];
+    
+    // Auto-compress images before upload
+    if (file.type.startsWith('image/')) {
+      const originalSize = file.size;
+      file = await compressImage(file, 1920, 0.8);
+      if (file.size < originalSize) {
+        toast({ title: 'Image optimized', description: `Compressed from ${(originalSize / 1024 / 1024).toFixed(1)}MB to ${(file.size / 1024 / 1024).toFixed(1)}MB` });
+      }
+    }
+
     const path = `${deal.id}/${Date.now()}_${file.name}`;
 
     const { error: uploadError } = await supabase.storage.from('documents').upload(path, file);
@@ -325,6 +335,13 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
   const handleDownload = async (doc: Document) => {
     const { data } = await supabase.storage.from('documents').createSignedUrl(doc.storage_path, 300);
     if (data?.signedUrl) window.open(data.signedUrl, '_blank');
+  };
+
+  const handlePreview = async (doc: Document) => {
+    const { data } = await supabase.storage.from('documents').createSignedUrl(doc.storage_path, 300);
+    if (data?.signedUrl) {
+      setLightboxDoc({ url: data.signedUrl, fileName: doc.file_name, contentType: doc.content_type });
+    }
   };
 
   const handleDeleteDoc = async (doc: Document) => {
