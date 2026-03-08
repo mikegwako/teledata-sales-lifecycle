@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Bell, Check, CheckCheck, ArrowRight, Loader2, Inbox } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Bell, Check, CheckCheck, Trash2, Loader2, Inbox } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 
 interface Notification {
   id: string;
@@ -35,6 +37,7 @@ export default function NotificationsPage() {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const fetchNotifications = async () => {
     if (!user) return;
@@ -67,6 +70,31 @@ export default function NotificationsPage() {
     if (!unreadIds.length) return;
     await supabase.from('notifications').update({ read: true }).in('id', unreadIds);
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selected.size === notifications.length) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(notifications.map(n => n.id)));
+    }
+  };
+
+  const deleteSelected = async () => {
+    if (!selected.size) return;
+    const ids = Array.from(selected);
+    await supabase.from('notifications').delete().in('id', ids);
+    setNotifications(prev => prev.filter(n => !selected.has(n.id)));
+    setSelected(new Set());
+    toast.success(`Deleted ${ids.length} notification${ids.length > 1 ? 's' : ''}`);
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -102,12 +130,20 @@ export default function NotificationsPage() {
             <p className="text-sm text-muted-foreground mt-1">{unreadCount} unread</p>
           )}
         </div>
-        {unreadCount > 0 && (
-          <Button variant="outline" size="sm" onClick={markAllRead}>
-            <CheckCheck className="h-4 w-4 mr-1.5" />
-            Mark all read
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {selected.size > 0 && (
+            <Button variant="destructive" size="sm" onClick={deleteSelected}>
+              <Trash2 className="h-4 w-4 mr-1.5" />
+              Delete ({selected.size})
+            </Button>
+          )}
+          {unreadCount > 0 && (
+            <Button variant="outline" size="sm" onClick={markAllRead}>
+              <CheckCheck className="h-4 w-4 mr-1.5" />
+              Mark all read
+            </Button>
+          )}
+        </div>
       </div>
 
       {notifications.length === 0 ? (
@@ -119,51 +155,67 @@ export default function NotificationsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-2">
-          <AnimatePresence>
-            {notifications.map((n) => (
-              <motion.div
-                key={n.id}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                className={`rounded-lg border p-4 transition-colors ${
-                  n.read
-                    ? 'border-border bg-card/50'
-                    : 'border-primary/20 bg-primary/5 shadow-sm'
-                }`}
-              >
-                <div className="flex items-start gap-3">
-                  <span className="text-lg mt-0.5">{typeIcons[n.type] || 'ℹ️'}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-semibold text-foreground">{n.title}</span>
-                      <Badge className={`text-[10px] ${typeBadgeColors[n.type] || typeBadgeColors.info}`}>
-                        {n.type.replace('_', ' ')}
-                      </Badge>
-                      {!n.read && (
-                        <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                      )}
+        <>
+          {notifications.length > 1 && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Checkbox
+                checked={selected.size === notifications.length}
+                onCheckedChange={toggleSelectAll}
+              />
+              <span>Select all</span>
+            </div>
+          )}
+          <div className="space-y-2">
+            <AnimatePresence>
+              {notifications.map((n) => (
+                <motion.div
+                  key={n.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className={`rounded-lg border p-4 transition-colors ${
+                    n.read
+                      ? 'border-border bg-card/50'
+                      : 'border-primary/20 bg-primary/5 shadow-sm'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      checked={selected.has(n.id)}
+                      onCheckedChange={() => toggleSelect(n.id)}
+                      className="mt-1"
+                    />
+                    <span className="text-lg mt-0.5">{typeIcons[n.type] || 'ℹ️'}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-semibold text-foreground">{n.title}</span>
+                        <Badge className={`text-[10px] ${typeBadgeColors[n.type] || typeBadgeColors.info}`}>
+                          {n.type.replace('_', ' ')}
+                        </Badge>
+                        {!n.read && (
+                          <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-0.5">{n.message}</p>
+                      <p className="text-[10px] text-muted-foreground/60 mt-1">{timeAgo(n.created_at)}</p>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-0.5">{n.message}</p>
-                    <p className="text-[10px] text-muted-foreground/60 mt-1">{timeAgo(n.created_at)}</p>
+                    {!n.read && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 shrink-0 text-muted-foreground hover:text-primary"
+                        onClick={() => markAsRead(n.id)}
+                        title="Mark as read"
+                      >
+                        <Check className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
-                  {!n.read && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 shrink-0 text-muted-foreground hover:text-primary"
-                      onClick={() => markAsRead(n.id)}
-                      title="Mark as read"
-                    >
-                      <Check className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        </>
       )}
     </motion.div>
   );
