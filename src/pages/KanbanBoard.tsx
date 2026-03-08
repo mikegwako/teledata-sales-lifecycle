@@ -49,6 +49,7 @@ export default function KanbanBoard() {
   const { user, role } = useAuth();
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const roleMap = useUserRoles();
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
   const [newDealOpen, setNewDealOpen] = useState(false);
