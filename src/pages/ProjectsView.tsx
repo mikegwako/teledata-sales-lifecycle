@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { ServiceTypeCombobox } from '@/components/ServiceTypeCombobox';
 import { RoleBadge } from '@/components/RoleBadge';
 import { useUserRoles } from '@/hooks/useUserRoles';
+import { useCurrency } from '@/hooks/useCurrency';
 
 interface Comment {
   id: string;
