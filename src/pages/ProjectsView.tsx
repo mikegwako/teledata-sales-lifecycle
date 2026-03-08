@@ -97,7 +97,7 @@ export default function ProjectsView() {
   const fetchComments = async (dealId: string) => {
     const { data } = await supabase
       .from('comments')
-      .select('*, profile:profiles!comments_user_id_fkey(full_name)')
+      .select('*, profile:profiles!comments_user_id_fkey(full_name, avatar_url, avatar_position)')
       .eq('deal_id', dealId)
       .order('created_at', { ascending: true });
     setComments((prev) => ({ ...prev, [dealId]: (data as any) || [] }));
