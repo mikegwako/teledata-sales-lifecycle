@@ -113,23 +113,17 @@ export default function AdminDashboard() {
     setActivityLogs((logRes.data as any) || []);
     setAuditLogs((auditRes.data as any) || []);
 
-    // Fetch auth emails for admin user management table
-    try {
-      const { data, error } = await supabase.functions.invoke<UserEmail[]>('list-user-emails');
-
-      if (error) {
-        console.error('Failed to load user emails:', error);
-        toast({ title: 'Could not load user emails', description: error.message, variant: 'destructive' });
-      } else {
-        const emailMap: Record<string, string> = {};
-        (data || []).forEach((u) => {
-          if (u?.id && u?.email) emailMap[u.id] = u.email;
-        });
-        setUserEmails(emailMap);
-      }
-    } catch (err: any) {
-      console.error('Failed to load user emails:', err);
-      toast({ title: 'Could not load user emails', description: err?.message || 'Unexpected error', variant: 'destructive' });
+    // Fetch auth emails for admin user management table via database RPC
+    const { data: emailData, error: emailError } = await supabase.rpc('get_user_emails');
+    if (emailError) {
+      console.error('Failed to load user emails:', emailError);
+      toast({ title: 'Could not load user emails', description: emailError.message, variant: 'destructive' });
+    } else {
+      const emailMap: Record<string, string> = {};
+      (emailData || []).forEach((u: { id: string; email: string }) => {
+        if (u?.id && u?.email) emailMap[u.id] = u.email;
+      });
+      setUserEmails(emailMap);
     }
 
     setLoading(false);
