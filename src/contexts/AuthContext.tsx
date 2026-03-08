@@ -10,6 +10,7 @@ export interface UserProfile {
   currency_preference: string;
   frozen_actions: string[];
   auto_delete_days: number | null;
+  avatar_url: string | null;
 }
 
 interface AuthContextType {
