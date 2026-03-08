@@ -535,8 +535,9 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
                           <p className="text-foreground flex items-center gap-1.5 flex-wrap">
                             <span className="font-medium">{group.user}</span>
                             {group.userId && roleMap[group.userId] && <RoleBadge role={roleMap[group.userId]} />}
+                            <Badge variant="secondary" className="text-[10px]">{actionLabels[group.logs[0].action] || group.logs[0].action.replace(/_/g, ' ')}</Badge>
                           </p>
-                          <p className="text-xs text-muted-foreground">{group.logs[0].details}</p>
+                          <p className="text-xs text-muted-foreground">{formatActivityText(group.logs[0])}</p>
                           <p className="text-[10px] text-muted-foreground">{new Date(group.time).toLocaleString()}</p>
                         </div>
                       </div>
@@ -558,7 +559,7 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
                           <div className="mt-2 pl-4 space-y-1 border-l-2 border-border ml-1">
                             {group.logs.map((log) => (
                               <div key={log.id} className="text-xs text-muted-foreground">
-                                <span>{log.details}</span>
+                                <span>{actionLabels[log.action] || log.action.replace(/_/g, ' ')}: {formatActivityText(log)}</span>
                                 <span className="ml-2 text-[10px]">{new Date(log.created_at).toLocaleString()}</span>
                               </div>
                             ))}
