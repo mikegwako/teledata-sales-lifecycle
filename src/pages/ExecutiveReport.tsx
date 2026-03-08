@@ -46,7 +46,7 @@ export default function ExecutiveReport() {
   const fetchData = async () => {
     const [dealRes, logRes] = await Promise.all([
       supabase.from('deals').select('*, assigned_profile:profiles!deals_assigned_to_fkey(full_name), profiles!deals_client_id_fkey(full_name)'),
-      supabase.from('activity_logs').select('user_id, id, profile:profiles!activity_logs_user_id_fkey(full_name)').order('created_at', { ascending: false }).limit(500),
+      supabase.from('activity_logs').select('user_id, id, profile:profiles!activity_logs_user_id_fkey(full_name, avatar_url, avatar_position)').order('created_at', { ascending: false }).limit(500),
     ]);
 
     const dealsData = (dealRes.data as any) || [];
