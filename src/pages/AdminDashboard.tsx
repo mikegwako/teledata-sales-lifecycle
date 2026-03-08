@@ -91,7 +91,7 @@ export default function AdminDashboard() {
   const [staffList, setStaffList] = useState<Profile[]>([]);
   const [userEmails, setUserEmails] = useState<Record<string, string>>({});
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
-  const [auditLogs, setAuditLogs] = useState<{ id: string; user_id: string; ip_address: string | null; user_agent: string | null; login_at: string }[]>([]);
+  const [auditLogs, setAuditLogs] = useState<{ id: string; user_id: string; ip_address: string | null; user_agent: string | null; login_at: string; city: string | null; country: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingUser, setDeletingUser] = useState<string | null>(null);
   const [savingFreeze, setSavingFreeze] = useState<string | null>(null);
