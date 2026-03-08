@@ -15,6 +15,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { ServiceTypeCombobox } from '@/components/ServiceTypeCombobox';
 import DealDetailDialog from '@/components/DealDetailDialog';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { RoleBadge } from '@/components/RoleBadge';
+import { useUserRoles } from '@/hooks/useUserRoles';
 
 interface Deal {
   id: string;
@@ -47,6 +49,7 @@ export default function KanbanBoard() {
   const { user, role } = useAuth();
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const roleMap = useUserRoles();
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
   const [newDealOpen, setNewDealOpen] = useState(false);
@@ -77,6 +80,9 @@ export default function KanbanBoard() {
 
     setDeals((prev) => prev.map((d) => (d.id === dealId ? { ...d, status: newStatus } : d)));
 
+    const currentDeal = deals.find((d) => d.id === dealId);
+    const oldStatus = currentDeal?.status || 'Unknown';
+
     const { error } = await supabase.from('deals').update({ status: newStatus }).eq('id', dealId);
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -87,7 +93,7 @@ export default function KanbanBoard() {
     if (user) {
       await supabase.from('activity_logs').insert({
         deal_id: dealId, user_id: user.id, action: 'status_change',
-        details: `Moved deal to ${newStatus}`,
+        details: `Moved deal from "${oldStatus}" to "${newStatus}"`,
       });
     }
 
@@ -247,6 +253,7 @@ export default function KanbanBoard() {
                                         <span className="text-[9px] font-bold text-accent-foreground">{deal.assigned_profile.full_name?.charAt(0)?.toUpperCase()}</span>
                                       </div>
                                       <span className="text-[10px] text-muted-foreground truncate">{deal.assigned_profile.full_name}</span>
+                                      {deal.assigned_to && roleMap[deal.assigned_to] && <RoleBadge role={roleMap[deal.assigned_to]} />}
                                     </div>
                                   ) : (
                                     role === 'staff' && (

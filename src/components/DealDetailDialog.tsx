@@ -9,6 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import { RoleBadge } from '@/components/RoleBadge';
+import { useUserRoles } from '@/hooks/useUserRoles';
 import {
   Send, Upload, FileText, Image as ImageIcon, Trash2, Download,
   DollarSign, User, Calendar, Loader2, MessageSquare, Paperclip, Clock,
@@ -76,10 +78,8 @@ const stageColors: Record<string, string> = {
   Completion: 'bg-success/10 text-success-foreground',
 };
 
-// Group consecutive activity logs by same user+action within 5 minutes
 function groupActivityLogs(logs: ActivityLog[]) {
-  const groups: { key: string; logs: ActivityLog[]; summary: string; user: string; time: string }[] = [];
-  
+  const groups: { key: string; logs: ActivityLog[]; summary: string; user: string; userId: string | null; time: string }[] = [];
   for (const log of logs) {
     const lastGroup = groups[groups.length - 1];
     if (
@@ -102,6 +102,7 @@ function groupActivityLogs(logs: ActivityLog[]) {
         logs: [log],
         summary: '',
         user: log.profile?.full_name || 'System',
+        userId: log.user_id,
         time: log.created_at,
       });
     }
@@ -113,6 +114,7 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
   const { user, role } = useAuth();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const roleMap = useUserRoles();
 
   const [comments, setComments] = useState<Comment[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -143,7 +145,6 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
       .select('*, profile:profiles!comments_user_id_fkey(full_name)')
       .eq('deal_id', deal.id)
       .order('created_at', { ascending: true });
-
     if (error) {
       console.error('Comments fetch error:', error);
       setComments([]);
@@ -227,12 +228,8 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
     }
 
     const { error: dbError } = await supabase.from('documents').insert({
-      deal_id: deal.id,
-      uploaded_by: user.id,
-      file_name: file.name,
-      storage_path: path,
-      file_size: file.size,
-      content_type: file.type,
+      deal_id: deal.id, uploaded_by: user.id, file_name: file.name,
+      storage_path: path, file_size: file.size, content_type: file.type,
     });
 
     if (dbError) {
@@ -240,10 +237,9 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
     } else {
       toast({ title: 'Document uploaded' });
       fetchDocuments();
-      // Log activity
       await supabase.from('activity_logs').insert({
         deal_id: deal.id, user_id: user.id, action: 'document_upload',
-        details: `Uploaded ${file.name}`,
+        details: `Uploaded "${file.name}"`,
       });
     }
     setUploading(false);
@@ -311,11 +307,15 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
             <User className="h-4 w-4 mx-auto text-muted-foreground mb-1" />
             <p className="text-[10px] text-muted-foreground">Client</p>
             <p className="text-xs sm:text-sm font-medium text-foreground truncate">{deal.profiles?.full_name || '—'}</p>
+            <div className="mt-1"><RoleBadge role="client" /></div>
           </div>
           <div className="rounded-lg border border-border p-2 sm:p-3 text-center">
             <User className="h-4 w-4 mx-auto text-primary mb-1" />
             <p className="text-[10px] text-muted-foreground">Assigned To</p>
             <p className="text-xs sm:text-sm font-medium text-foreground truncate">{deal.assigned_profile?.full_name || 'Unassigned'}</p>
+            {deal.assigned_to && roleMap[deal.assigned_to] && (
+              <div className="mt-1"><RoleBadge role={roleMap[deal.assigned_to]} /></div>
+            )}
           </div>
           <div className="rounded-lg border border-border p-2 sm:p-3 text-center">
             <Calendar className="h-4 w-4 mx-auto text-muted-foreground mb-1" />
@@ -340,14 +340,12 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
             </TabsTrigger>
             <TabsTrigger value="comments" className="text-[10px] sm:text-xs">
               <MessageSquare className="h-3 w-3 mr-0.5 sm:mr-1" />
-              <span className="hidden sm:inline">Comments</span>
-              <span className="sm:hidden">Chat</span>
+              <span className="hidden sm:inline">Comments</span><span className="sm:hidden">Chat</span>
               {comments.length > 0 && <span className="ml-0.5">({comments.length})</span>}
             </TabsTrigger>
             <TabsTrigger value="documents" className="text-[10px] sm:text-xs">
               <Paperclip className="h-3 w-3 mr-0.5 sm:mr-1" />
-              <span className="hidden sm:inline">Docs</span>
-              <span className="sm:hidden">Files</span>
+              <span className="hidden sm:inline">Docs</span><span className="sm:hidden">Files</span>
               {documents.length > 0 && <span className="ml-0.5">({documents.length})</span>}
             </TabsTrigger>
             <TabsTrigger value="activity" className="text-[10px] sm:text-xs">
@@ -387,33 +385,37 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
                 {comments.length === 0 && (
                   <p className="text-sm text-muted-foreground text-center py-6">No comments yet. Start the conversation.</p>
                 )}
-                {comments.map((c) => (
-                  <div key={c.id} className="flex gap-3 group">
-                    <div className="h-7 w-7 rounded-full gradient-primary flex items-center justify-center shrink-0">
-                      <span className="text-[10px] font-bold text-primary-foreground">
-                        {c.profile?.full_name?.charAt(0)?.toUpperCase() || '?'}
-                      </span>
-                    </div>
-                    <div className="flex-1 bg-muted/40 rounded-lg p-2.5">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-semibold text-foreground">{c.profile?.full_name || 'User'}</span>
-                          <span className="text-[10px] text-muted-foreground">{new Date(c.created_at).toLocaleString()}</span>
-                        </div>
-                        {(role === 'admin' || c.user_id === user?.id) && (
-                          <Button
-                            variant="ghost" size="icon"
-                            className="h-5 w-5 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
-                            onClick={() => handleDeleteComment(c.id)}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        )}
+                {comments.map((c) => {
+                  const commentRole = roleMap[c.user_id];
+                  return (
+                    <div key={c.id} className="flex gap-3 group">
+                      <div className="h-7 w-7 rounded-full gradient-primary flex items-center justify-center shrink-0">
+                        <span className="text-[10px] font-bold text-primary-foreground">
+                          {c.profile?.full_name?.charAt(0)?.toUpperCase() || '?'}
+                        </span>
                       </div>
-                      <p className="text-sm text-foreground mt-0.5">{c.content}</p>
+                      <div className="flex-1 bg-muted/40 rounded-lg p-2.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs font-semibold text-foreground">{c.profile?.full_name || 'User'}</span>
+                            {commentRole && <RoleBadge role={commentRole} />}
+                            <span className="text-[10px] text-muted-foreground">{new Date(c.created_at).toLocaleString()}</span>
+                          </div>
+                          {(role === 'admin' || c.user_id === user?.id) && (
+                            <Button
+                              variant="ghost" size="icon"
+                              className="h-5 w-5 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
+                              onClick={() => handleDeleteComment(c.id)}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
+                        <p className="text-sm text-foreground mt-0.5">{c.content}</p>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
             <div className="flex gap-2 mt-3">
@@ -432,18 +434,8 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
 
           {/* Documents */}
           <TabsContent value="documents" className="mt-4">
-            <input
-              ref={fileInputRef}
-              type="file"
-              className="hidden"
-              accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.xls,.xlsx"
-              onChange={handleFileUpload}
-            />
-            <Button
-              variant="outline" size="sm" className="w-full mb-3 border-dashed"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-            >
+            <input ref={fileInputRef} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.xls,.xlsx" onChange={handleFileUpload} />
+            <Button variant="outline" size="sm" className="w-full mb-3 border-dashed" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
               {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
               {uploading ? 'Uploading...' : 'Upload Document'}
             </Button>
@@ -454,25 +446,33 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
               <p className="text-sm text-muted-foreground text-center py-6">No documents attached to this deal.</p>
             ) : (
               <div className="space-y-2 max-h-[250px] overflow-y-auto">
-                {documents.map((doc) => (
-                  <div key={doc.id} className="flex items-center gap-3 p-2.5 rounded-lg border border-border hover:bg-muted/30 transition-colors">
-                    {getFileIcon(doc.content_type)}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">{doc.file_name}</p>
-                      <p className="text-[10px] text-muted-foreground">
-                        {formatFileSize(doc.file_size)} • {doc.uploader?.full_name || 'Unknown'} • {new Date(doc.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => handleDownload(doc)}>
-                      <Download className="h-3.5 w-3.5" />
-                    </Button>
-                    {(role === 'admin' || doc.uploaded_by === user?.id) && (
-                      <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteDoc(doc)}>
-                        <Trash2 className="h-3.5 w-3.5" />
+                {documents.map((doc) => {
+                  const uploaderRole = roleMap[doc.uploaded_by];
+                  return (
+                    <div key={doc.id} className="flex items-center gap-3 p-2.5 rounded-lg border border-border hover:bg-muted/30 transition-colors">
+                      {getFileIcon(doc.content_type)}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{doc.file_name}</p>
+                        <p className="text-[10px] text-muted-foreground flex items-center gap-1 flex-wrap">
+                          {formatFileSize(doc.file_size)} •
+                          <span className="inline-flex items-center gap-1">
+                            {doc.uploader?.full_name || 'Unknown'}
+                            {uploaderRole && <RoleBadge role={uploaderRole} />}
+                          </span>
+                          • {new Date(doc.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => handleDownload(doc)}>
+                        <Download className="h-3.5 w-3.5" />
                       </Button>
-                    )}
-                  </div>
-                ))}
+                      {(role === 'admin' || doc.uploaded_by === user?.id) && (
+                        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteDoc(doc)}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </TabsContent>
@@ -489,10 +489,11 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
                       <div className="flex items-start gap-2 text-sm">
                         <div className="h-1.5 w-1.5 rounded-full bg-primary mt-2 shrink-0" />
                         <div>
-                          <p className="text-foreground">
+                          <p className="text-foreground flex items-center gap-1.5 flex-wrap">
                             <span className="font-medium">{group.user}</span>
-                            {' — '}{group.logs[0].details}
+                            {group.userId && roleMap[group.userId] && <RoleBadge role={roleMap[group.userId]} />}
                           </p>
+                          <p className="text-xs text-muted-foreground">{group.logs[0].details}</p>
                           <p className="text-[10px] text-muted-foreground">{new Date(group.time).toLocaleString()}</p>
                         </div>
                       </div>
@@ -503,7 +504,10 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
                           onClick={() => setExpandedGroup(expandedGroup === group.key ? null : group.key)}
                         >
                           <div className="h-1.5 w-1.5 rounded-full bg-accent shrink-0" />
-                          <span className="font-medium text-foreground">{group.summary}</span>
+                          <span className="font-medium text-foreground flex items-center gap-1.5 flex-wrap">
+                            {group.summary}
+                            {group.userId && roleMap[group.userId] && <RoleBadge role={roleMap[group.userId]} />}
+                          </span>
                           <span className="text-[10px] text-muted-foreground ml-auto">{new Date(group.time).toLocaleString()}</span>
                           <span className="text-muted-foreground text-xs">{expandedGroup === group.key ? '▲' : '▼'}</span>
                         </button>

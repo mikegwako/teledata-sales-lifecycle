@@ -4,9 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, TrendingUp, FolderOpen, Target, DollarSign, Activity, Users, ArrowUpRight, ArrowDownRight, FileBarChart } from 'lucide-react';
+import { Loader2, TrendingUp, FolderOpen, Target, DollarSign, Activity, Users, ArrowUpRight, ArrowDownRight, FileBarChart, Trash2, AlertTriangle } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useNavigate } from 'react-router-dom';
+import { RoleBadge } from '@/components/RoleBadge';
+import { useUserRoles } from '@/hooks/useUserRoles';
+import { useToast } from '@/hooks/use-toast';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface Deal {
   id: string;
@@ -37,10 +41,8 @@ interface ActivityLog {
   deal?: { title: string; deal_number: number } | null;
 }
 
-// Group activity logs into stories
 function groupLogs(logs: ActivityLog[]) {
-  const groups: { key: string; logs: ActivityLog[]; summary: string; user: string; time: string; expanded?: boolean }[] = [];
-
+  const groups: { key: string; logs: ActivityLog[]; summary: string; user: string; userId: string | null; time: string }[] = [];
   for (const log of logs) {
     const last = groups[groups.length - 1];
     if (
@@ -59,6 +61,7 @@ function groupLogs(logs: ActivityLog[]) {
         logs: [log],
         summary: '',
         user: log.profile?.full_name || 'System',
+        userId: log.user_id,
         time: log.created_at,
       });
     }
@@ -68,10 +71,13 @@ function groupLogs(logs: ActivityLog[]) {
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [deals, setDeals] = useState<Deal[]>([]);
   const [staffList, setStaffList] = useState<Profile[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingUser, setDeletingUser] = useState<string | null>(null);
+  const roleMap = useUserRoles();
 
   const fetchAll = async () => {
     const [dealRes, staffRes, logRes] = await Promise.all([
@@ -99,6 +105,31 @@ export default function AdminDashboard() {
     const { error } = await supabase.from('deals').update({ assigned_to: staffId }).eq('id', dealId);
     if (error) return;
     fetchAll();
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    setDeletingUser(userId);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-user`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({ user_id: userId }),
+      });
+      const result = await res.json();
+      if (result.error) {
+        toast({ title: 'Error', description: result.error, variant: 'destructive' });
+      } else {
+        toast({ title: 'User deleted successfully' });
+        fetchAll();
+      }
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    }
+    setDeletingUser(null);
   };
 
   if (loading) {
@@ -218,7 +249,7 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        {/* Recent Activity Feed with Story Grouping */}
+        {/* Recent Activity Feed */}
         <Card className="shadow-card">
           <CardHeader>
             <CardTitle className="font-display flex items-center gap-2 text-base sm:text-lg">
@@ -238,10 +269,11 @@ export default function AdminDashboard() {
                           <span className="text-[10px] font-bold text-primary-foreground">{group.user.charAt(0)?.toUpperCase() || '?'}</span>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-foreground">
+                          <p className="text-foreground flex items-center gap-1.5 flex-wrap">
                             <span className="font-medium">{group.user}</span>
-                            {' '}<span className="text-muted-foreground">{group.logs[0].details}</span>
+                            {group.userId && roleMap[group.userId] && <RoleBadge role={roleMap[group.userId]} />}
                           </p>
+                          <p className="text-muted-foreground text-xs mt-0.5">{group.logs[0].details}</p>
                           {group.logs[0].deal && (
                             <p className="text-xs text-primary/70 font-mono">TD-{1000 + (group.logs[0].deal.deal_number || 0)} • {group.logs[0].deal.title}</p>
                           )}
@@ -256,7 +288,10 @@ export default function AdminDashboard() {
                             <span className="text-[10px] font-bold text-accent-foreground">{group.user.charAt(0)?.toUpperCase() || '?'}</span>
                           </div>
                           <div className="flex-1">
-                            <p className="font-medium text-foreground">{group.summary}</p>
+                            <p className="font-medium text-foreground flex items-center gap-1.5 flex-wrap">
+                              {group.summary}
+                              {group.userId && roleMap[group.userId] && <RoleBadge role={roleMap[group.userId]} />}
+                            </p>
                             <p className="text-xs text-muted-foreground">{new Date(group.time).toLocaleString()}</p>
                           </div>
                           <Badge variant="secondary" className="text-[10px] shrink-0">{group.logs.length} events</Badge>
@@ -305,23 +340,105 @@ export default function AdminDashboard() {
                       <p className="font-medium text-foreground text-xs sm:text-sm truncate max-w-[120px] sm:max-w-none">{deal.title}</p>
                       <p className="font-mono text-primary text-[10px]">TD-{1000 + (deal.deal_number || 0)}</p>
                     </td>
-                    <td className="py-2 px-2 sm:px-3 text-muted-foreground text-xs hidden sm:table-cell">{deal.profiles?.full_name || '—'}</td>
+                    <td className="py-2 px-2 sm:px-3 hidden sm:table-cell">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-muted-foreground text-xs">{deal.profiles?.full_name || '—'}</span>
+                        <RoleBadge role="client" />
+                      </div>
+                    </td>
                     <td className="py-2 px-2 sm:px-3 font-mono text-xs">${Number(deal.value || 0).toLocaleString()}</td>
                     <td className="py-2 px-2 sm:px-3 hidden md:table-cell"><Badge variant="secondary" className="text-[10px]">{deal.status}</Badge></td>
                     <td className="py-2 px-2 sm:px-3">
-                      <Select value={deal.assigned_to || 'unassigned'} onValueChange={(v) => handleReassign(deal.id, v)}>
-                        <SelectTrigger className="h-7 sm:h-8 w-[120px] sm:w-[180px] text-[10px] sm:text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {staffList.map((s) => (
-                            <SelectItem key={s.id} value={s.id}>{s.full_name || s.id}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="flex items-center gap-1.5">
+                        <Select value={deal.assigned_to || 'unassigned'} onValueChange={(v) => handleReassign(deal.id, v)}>
+                          <SelectTrigger className="h-7 sm:h-8 w-[100px] sm:w-[150px] text-[10px] sm:text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {staffList.map((s) => (
+                              <SelectItem key={s.id} value={s.id}>
+                                <span className="flex items-center gap-1.5">
+                                  {s.full_name || s.id}
+                                  {roleMap[s.id] && <RoleBadge role={roleMap[s.id]} />}
+                                </span>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </td>
                   </tr>
                 ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* User Management */}
+      <Card className="shadow-card">
+        <CardHeader>
+          <CardTitle className="font-display flex items-center gap-2 text-base sm:text-lg">
+            <Users className="h-5 w-5 text-primary" />User Management
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left py-2 px-2 sm:px-3 text-muted-foreground font-medium text-xs">Name</th>
+                  <th className="text-left py-2 px-2 sm:px-3 text-muted-foreground font-medium text-xs">Role</th>
+                  <th className="text-left py-2 px-2 sm:px-3 text-muted-foreground font-medium text-xs">Active Deals</th>
+                  <th className="text-right py-2 px-2 sm:px-3 text-muted-foreground font-medium text-xs">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {staffList.map((person) => {
+                  const userRole = roleMap[person.id] || 'client';
+                  const dealCount = deals.filter((d) => d.assigned_to === person.id || (d as any).client_id === person.id).length;
+                  return (
+                    <tr key={person.id} className="border-b border-border/50 hover:bg-muted/30">
+                      <td className="py-2 px-2 sm:px-3">
+                        <div className="flex items-center gap-2">
+                          <div className="h-7 w-7 rounded-full gradient-primary flex items-center justify-center shrink-0">
+                            <span className="text-[10px] font-bold text-primary-foreground">{person.full_name?.charAt(0)?.toUpperCase() || '?'}</span>
+                          </div>
+                          <span className="font-medium text-foreground text-xs sm:text-sm">{person.full_name || 'Unknown'}</span>
+                        </div>
+                      </td>
+                      <td className="py-2 px-2 sm:px-3"><RoleBadge role={userRole} /></td>
+                      <td className="py-2 px-2 sm:px-3 text-xs text-muted-foreground">{dealCount}</td>
+                      <td className="py-2 px-2 sm:px-3 text-right">
+                        {userRole !== 'admin' && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" disabled={deletingUser === person.id}>
+                                {deletingUser === person.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle className="flex items-center gap-2">
+                                  <AlertTriangle className="h-5 w-5 text-destructive" />Delete User
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete <strong>{person.full_name}</strong>? This action cannot be undone. All their data (deals, comments, documents) may be affected.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => handleDeleteUser(person.id)}>
+                                  Delete User
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

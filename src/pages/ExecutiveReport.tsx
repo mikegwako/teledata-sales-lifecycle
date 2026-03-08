@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Loader2, Download, TrendingUp, AlertTriangle, Users, DollarSign, FileText, Activity } from 'lucide-react';
+import { RoleBadge } from '@/components/RoleBadge';
+import { useUserRoles } from '@/hooks/useUserRoles';
 import teledataLogo from '@/assets/teledata-logo.jpeg';
 
 interface Deal {
@@ -31,11 +33,10 @@ export default function ExecutiveReport() {
   const [activityCounts, setActivityCounts] = useState<StaffActivity[]>([]);
   const [docCounts, setDocCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+  const roleMap = useUserRoles();
   const reportRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useEffect(() => { fetchData(); }, []);
 
   const fetchData = async () => {
     const [dealRes, logRes] = await Promise.all([
@@ -46,7 +47,6 @@ export default function ExecutiveReport() {
     const dealsData = (dealRes.data as any) || [];
     setDeals(dealsData);
 
-    // Count activity per staff
     const staffMap: Record<string, { count: number; name: string }> = {};
     (logRes.data || []).forEach((log: any) => {
       if (!log.user_id) return;
@@ -57,20 +57,16 @@ export default function ExecutiveReport() {
     });
     setActivityCounts(Object.entries(staffMap).map(([user_id, v]) => ({ user_id, ...v })).sort((a, b) => b.count - a.count));
 
-    // Check documents per deal
     const docMap: Record<string, number> = {};
     for (const deal of dealsData) {
       const { count } = await supabase.from('documents').select('id', { count: 'exact', head: true }).eq('deal_id', deal.id);
       docMap[deal.id] = count || 0;
     }
     setDocCounts(docMap);
-
     setLoading(false);
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
+  const handlePrint = () => { window.print(); };
 
   if (loading) {
     return (
@@ -89,14 +85,8 @@ export default function ExecutiveReport() {
   const profitMargin = totalRevenue > 0 ? Math.round((profit / totalRevenue) * 100) : 0;
   const completedDeals = deals.filter((d) => d.status === 'Completion');
   const winRate = deals.length > 0 ? Math.round((completedDeals.length / deals.length) * 100) : 0;
-
-  // Top 3 deals by value
   const topDeals = [...deals].sort((a, b) => Number(b.value || 0) - Number(a.value || 0)).slice(0, 3);
-
-  // Deals missing documents
   const missingDocs = deals.filter((d) => (docCounts[d.id] || 0) === 0 && d.status !== 'Inception');
-
-  // 30-day trend
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   const recentDeals = deals.filter((d) => new Date(d.created_at) >= thirtyDaysAgo);
   const recentValue = recentDeals.reduce((s, d) => s + Number(d.value || 0), 0);
@@ -114,7 +104,6 @@ export default function ExecutiveReport() {
       </div>
 
       <div ref={reportRef} className="space-y-6">
-        {/* Report Header for Print */}
         <div className="hidden print:flex items-center gap-4 mb-6 pb-4 border-b-2 border-primary">
           <img src={teledataLogo} alt="Teledata Africa" className="h-14 w-14 rounded-lg object-cover" />
           <div>
@@ -178,8 +167,13 @@ export default function ExecutiveReport() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-foreground text-sm truncate">{deal.title}</p>
-                      <p className="text-[10px] text-muted-foreground">
-                        TD-{1000 + (deal.deal_number || 0)} • {deal.assigned_profile?.full_name || 'Unassigned'} • {deal.status}
+                      <p className="text-[10px] text-muted-foreground flex items-center gap-1 flex-wrap">
+                        TD-{1000 + (deal.deal_number || 0)} •
+                        <span className="inline-flex items-center gap-1">
+                          {deal.assigned_profile?.full_name || 'Unassigned'}
+                          {deal.assigned_to && roleMap[deal.assigned_to] && <RoleBadge role={roleMap[deal.assigned_to]} />}
+                        </span>
+                        • {deal.status}
                       </p>
                     </div>
                     <span className="font-mono font-bold text-primary text-sm shrink-0">${Number(deal.value || 0).toLocaleString()}</span>
@@ -204,10 +198,14 @@ export default function ExecutiveReport() {
                   {activityCounts.slice(0, 5).map((staff) => {
                     const maxCount = activityCounts[0]?.count || 1;
                     const pct = Math.round((staff.count / maxCount) * 100);
+                    const userRole = roleMap[staff.user_id];
                     return (
                       <div key={staff.user_id} className="space-y-1">
-                        <div className="flex justify-between text-sm">
-                          <span className="font-medium text-foreground">{staff.name}</span>
+                        <div className="flex justify-between text-sm items-center">
+                          <span className="font-medium text-foreground flex items-center gap-1.5">
+                            {staff.name}
+                            {userRole && <RoleBadge role={userRole} />}
+                          </span>
                           <span className="text-muted-foreground">{staff.count} actions</span>
                         </div>
                         <div className="h-2 rounded-full bg-muted overflow-hidden">
@@ -237,7 +235,13 @@ export default function ExecutiveReport() {
                     <FileText className="h-4 w-4 text-warning shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-foreground truncate">{deal.title}</p>
-                      <p className="text-[10px] text-muted-foreground">TD-{1000 + (deal.deal_number || 0)} • {deal.status} • {deal.assigned_profile?.full_name || 'Unassigned'}</p>
+                      <p className="text-[10px] text-muted-foreground flex items-center gap-1 flex-wrap">
+                        TD-{1000 + (deal.deal_number || 0)} • {deal.status} •
+                        <span className="inline-flex items-center gap-1">
+                          {deal.assigned_profile?.full_name || 'Unassigned'}
+                          {deal.assigned_to && roleMap[deal.assigned_to] && <RoleBadge role={roleMap[deal.assigned_to]} />}
+                        </span>
+                      </p>
                     </div>
                     <Badge variant="outline" className="text-[10px] border-warning text-warning shrink-0">No docs</Badge>
                   </div>
@@ -250,7 +254,6 @@ export default function ExecutiveReport() {
           </Card>
         )}
 
-        {/* Footer */}
         <Separator />
         <div className="text-center py-4">
           <p className="text-xs text-muted-foreground">Teledata Africa Sales Engine • Confidential Executive Report</p>
