@@ -367,42 +367,88 @@ export default function ProjectsView() {
                 {/* Comments Section */}
                 {activeSection === 'comments' && (
                   <div className="mt-3 space-y-2">
-                    {(comments[deal.id] || []).map((c) => (
-                      <div key={c.id} className="bg-muted/50 rounded-lg p-2.5 text-sm group flex gap-2">
-                        <div className="h-6 w-6 rounded-full gradient-primary flex items-center justify-center shrink-0">
-                          <span className="text-[9px] font-bold text-primary-foreground">{c.profile?.full_name?.charAt(0)?.toUpperCase() || '?'}</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="font-medium text-foreground">{c.profile?.full_name || 'User'}</span>
-                              {roleMap[c.user_id] && <RoleBadge role={roleMap[c.user_id]} />}
-                              <span className="text-muted-foreground text-xs">{new Date(c.created_at).toLocaleDateString()}</span>
+                    {(comments[deal.id] || []).map((c) => {
+                      const renderContent = (text: string) => {
+                        const parts = text.split(/(@\w[\w\s]*)/g);
+                        return parts.map((part, i) =>
+                          part.startsWith('@') ? <span key={i} className="font-semibold text-primary">{part}</span> : part
+                        );
+                      };
+                      return (
+                        <div key={c.id} className="bg-muted/50 rounded-lg p-2.5 text-sm group flex gap-2">
+                          <UserAvatar fullName={c.profile?.full_name} avatarUrl={c.profile?.avatar_url} avatarPosition={c.profile?.avatar_position} className="h-6 w-6" fallbackClassName="text-[9px]" />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="font-medium text-foreground">{c.profile?.full_name || 'User'}</span>
+                                {roleMap[c.user_id] && <RoleBadge role={roleMap[c.user_id]} />}
+                                <span className="text-muted-foreground text-xs">{new Date(c.created_at).toLocaleDateString()}</span>
+                              </div>
+                              {(role === 'admin' || c.user_id === user?.id) && (
+                                <Button variant="ghost" size="icon" className="h-5 w-5 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteComment(deal.id, c.id)}>
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              )}
                             </div>
-                            {(role === 'admin' || c.user_id === user?.id) && (
-                              <Button variant="ghost" size="icon" className="h-5 w-5 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteComment(deal.id, c.id)}>
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            )}
+                            <p className="text-foreground mt-0.5">{renderContent(c.content)}</p>
                           </div>
-                          <p className="text-foreground mt-0.5">{c.content}</p>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                     {comments[deal.id]?.length === 0 && (
                       <p className="text-xs text-muted-foreground text-center py-3">No comments yet</p>
                     )}
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="Add a comment..."
-                        value={newComment[deal.id] || ''}
-                        onChange={(e) => setNewComment((prev) => ({ ...prev, [deal.id]: e.target.value }))}
-                        onKeyDown={(e) => e.key === 'Enter' && handleComment(deal.id)}
-                        className="text-sm"
-                      />
-                      <Button size="icon" className="shrink-0 gradient-primary text-primary-foreground" onClick={() => handleComment(deal.id)}>
-                        <Send className="h-4 w-4" />
-                      </Button>
+                    <div className="relative">
+                      {showMentions[deal.id] && (
+                        <div className="absolute bottom-full mb-1 left-0 right-0 z-50 bg-card border border-border rounded-lg shadow-elevated max-h-[150px] overflow-y-auto">
+                          {allProfiles
+                            .filter(p => p.full_name?.toLowerCase().includes(mentionQuery.toLowerCase()))
+                            .slice(0, 5)
+                            .map(p => (
+                              <button
+                                key={p.id}
+                                className="w-full text-left px-3 py-1.5 text-sm hover:bg-muted/50 flex items-center gap-2"
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  const val = newComment[deal.id] || '';
+                                  const before = val.substring(0, val.lastIndexOf('@'));
+                                  setNewComment((prev) => ({ ...prev, [deal.id]: `${before}@${p.full_name} ` }));
+                                  setShowMentions((prev) => ({ ...prev, [deal.id]: false }));
+                                }}
+                              >
+                                <UserAvatar fullName={p.full_name} avatarUrl={p.avatar_url} avatarPosition={p.avatar_position} className="h-5 w-5" fallbackClassName="text-[8px]" />
+                                <span className="text-foreground">{p.full_name}</span>
+                                {roleMap[p.id] && <RoleBadge role={roleMap[p.id]} />}
+                              </button>
+                            ))}
+                        </div>
+                      )}
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Add a comment... (type @ to mention)"
+                          value={newComment[deal.id] || ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setNewComment((prev) => ({ ...prev, [deal.id]: val }));
+                            const lastAt = val.lastIndexOf('@');
+                            if (lastAt >= 0 && !val.substring(lastAt).includes(' ')) {
+                              setShowMentions((prev) => ({ ...prev, [deal.id]: true }));
+                              setMentionQuery(val.substring(lastAt + 1));
+                            } else {
+                              setShowMentions((prev) => ({ ...prev, [deal.id]: false }));
+                            }
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !showMentions[deal.id]) handleComment(deal.id);
+                            if (e.key === 'Escape') setShowMentions((prev) => ({ ...prev, [deal.id]: false }));
+                          }}
+                          onBlur={() => setTimeout(() => setShowMentions((prev) => ({ ...prev, [deal.id]: false })), 200)}
+                          className="text-sm"
+                        />
+                        <Button size="icon" className="shrink-0 gradient-primary text-primary-foreground" onClick={() => handleComment(deal.id)}>
+                          <Send className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 )}
