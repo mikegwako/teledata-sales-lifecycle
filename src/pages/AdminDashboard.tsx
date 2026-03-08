@@ -663,6 +663,15 @@ export default function AdminDashboard() {
                         <td className="py-2 px-2 sm:px-3 text-xs text-muted-foreground">
                           {new Date(log.login_at).toLocaleString()}
                         </td>
+                        <td className="py-2 px-2 sm:px-3 text-right">
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={async () => {
+                            await supabase.from('login_audit_logs').delete().eq('id', log.id);
+                            toast({ title: 'Audit log deleted' });
+                            fetchAll();
+                          }}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </td>
                       </tr>
                     );
                   })}
