@@ -104,8 +104,8 @@ export default function AdminDashboard() {
   const fetchAll = async () => {
     const [dealRes, staffRes, logRes, auditRes] = await Promise.all([
       supabase.from('deals').select('*, assigned_profile:profiles!deals_assigned_to_fkey(full_name), profiles!deals_client_id_fkey(full_name)'),
-      supabase.from('profiles').select('id, full_name, phone_number, currency_preference, frozen_actions, avatar_url'),
-      supabase.from('activity_logs').select('*, profile:profiles!activity_logs_user_id_fkey(full_name), deal:deals!activity_logs_deal_id_fkey(title, deal_number)').order('created_at', { ascending: false }).limit(30),
+      supabase.from('profiles').select('id, full_name, phone_number, currency_preference, frozen_actions, avatar_url, avatar_position'),
+      supabase.from('activity_logs').select('*, profile:profiles!activity_logs_user_id_fkey(full_name, avatar_url, avatar_position), deal:deals!activity_logs_deal_id_fkey(title, deal_number)').order('created_at', { ascending: false }).limit(30),
       supabase.from('login_audit_logs').select('*').order('login_at', { ascending: false }).limit(20),
     ]);
     setDeals((dealRes.data as any) || []);
