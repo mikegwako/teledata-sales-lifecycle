@@ -48,15 +48,32 @@ export function useCurrency() {
     return () => clearInterval(interval);
   }, [fetchRate, exchangeRate]);
 
-  const formatCurrency = (amount: number) => {
+  /** Format a USD-stored amount into the user's display currency */
+  const formatCurrency = (amountInUSD: number) => {
     if (currency === 'KSH') {
       if (exchangeRate) {
-        const converted = amount * exchangeRate;
+        const converted = amountInUSD * exchangeRate;
         return `KSh ${converted.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
       }
-      return `KSh ${amount.toLocaleString()}`;
+      return `KSh ${amountInUSD.toLocaleString()}`;
     }
-    return `$${amount.toLocaleString()}`;
+    return `$${amountInUSD.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  };
+
+  /** Convert a USD amount to the user's display currency (raw number) */
+  const toDisplayCurrency = (amountInUSD: number): number => {
+    if (currency === 'KSH' && exchangeRate) {
+      return amountInUSD * exchangeRate;
+    }
+    return amountInUSD;
+  };
+
+  /** Convert from the user's display currency back to USD for storage */
+  const toBaseCurrency = (amountInDisplayCurrency: number): number => {
+    if (currency === 'KSH' && exchangeRate) {
+      return amountInDisplayCurrency / exchangeRate;
+    }
+    return amountInDisplayCurrency;
   };
 
   const currencyLabel = currency === 'KSH' ? 'KSh' : '$';
@@ -65,5 +82,5 @@ export function useCurrency() {
     ? `1 USD = ${exchangeRate.toLocaleString(undefined, { maximumFractionDigits: 2 })} KSh`
     : null;
 
-  return { currency, formatCurrency, currencyLabel, exchangeRate, rateInfo, rateLoading };
+  return { currency, formatCurrency, toDisplayCurrency, toBaseCurrency, currencyLabel, exchangeRate, rateInfo, rateLoading };
 }
