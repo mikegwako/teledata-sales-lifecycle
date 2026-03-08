@@ -86,6 +86,7 @@ export default function ProfileSettings({ open, onOpenChange }: ProfileSettingsP
       phone_number: phoneNumber,
       currency_preference: currency,
       auto_delete_days: autoDelete ? 40 : null,
+      avatar_position: avatarPosition,
     } as any).eq('id', user.id);
     
     if (error) {
