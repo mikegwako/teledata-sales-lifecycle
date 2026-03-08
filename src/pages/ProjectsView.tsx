@@ -279,7 +279,7 @@ export default function ProjectsView() {
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <Badge className={stageColors[deal.status]}>{deal.status}</Badge>
-                    {deal.value > 0 && <Badge variant="outline" className="font-mono">${Number(deal.value).toLocaleString()}</Badge>}
+                    {deal.value > 0 && <Badge variant="outline" className="font-mono">{formatCurrency(Number(deal.value))}</Badge>}
                     {deal.assigned_profile && (
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <div className="h-6 w-6 rounded-full gradient-accent flex items-center justify-center">
