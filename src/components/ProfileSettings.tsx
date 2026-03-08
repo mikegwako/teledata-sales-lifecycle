@@ -100,7 +100,7 @@ export default function ProfileSettings({ open, onOpenChange }: ProfileSettingsP
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md w-[95vw]">
+      <DialogContent className="sm:max-w-md w-[95vw] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-display">Edit Profile</DialogTitle>
         </DialogHeader>
