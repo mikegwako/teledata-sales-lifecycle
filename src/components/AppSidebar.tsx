@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { NavLink } from '@/components/NavLink';
 import ProfileSettings from '@/components/ProfileSettings';
 import teledataLogo from '@/assets/teledata-logo.jpeg';
+import { supabase } from '@/lib/supabase';
 import {
   Sidebar,
   SidebarContent,
@@ -15,7 +16,7 @@ import {
   SidebarFooter,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { LayoutDashboard, KanbanSquare, FilePlus, FolderOpen, LogOut, ChevronLeft, FileBarChart, Settings } from 'lucide-react';
+import { LayoutDashboard, KanbanSquare, FilePlus, FolderOpen, LogOut, ChevronLeft, FileBarChart, Settings, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export function AppSidebar() {
