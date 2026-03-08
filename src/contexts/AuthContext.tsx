@@ -87,6 +87,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
+    // Log the login for audit trail
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        await supabase.from('login_audit_logs').insert({
+          user_id: session.user.id,
+          ip_address: null, // captured server-side if needed
+          user_agent: navigator.userAgent,
+        });
+      }
+    } catch (e) {
+      console.warn('Audit log failed:', e);
+    }
   };
 
   const signOut = async () => {

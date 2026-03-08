@@ -169,8 +169,17 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
       fetchDocuments();
       fetchActivityLogs();
       fetchProfiles();
+      fetchTaxPresets();
     }
   }, [deal?.id, open]);
+
+  const fetchTaxPresets = async () => {
+    const { data } = await supabase.from('tax_presets').select('*').order('is_default', { ascending: false });
+    const presets = (data as any) || [];
+    setTaxPresets(presets.map((p: any) => ({ ...p, taxes: typeof p.taxes === 'string' ? JSON.parse(p.taxes) : p.taxes })));
+    const defaultPreset = presets.find((p: any) => p.is_default);
+    if (defaultPreset && !selectedTaxPreset) setSelectedTaxPreset(defaultPreset.id);
+  };
 
   const fetchProfiles = async () => {
     const { data } = await supabase.from('profiles').select('id, full_name');
