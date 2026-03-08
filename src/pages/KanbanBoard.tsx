@@ -131,9 +131,10 @@ export default function KanbanBoard() {
 
   const handleNewDeal = async () => {
     if (!user || !newDeal.title) return;
+    const valueInUSD = toBaseCurrency(parseFloat(newDeal.value) || 0);
     const { error } = await supabase.from('deals').insert({
       title: newDeal.title, service_type: newDeal.service_type, description: newDeal.description,
-      value: parseFloat(newDeal.value) || 0, assigned_to: user.id, status: 'Inception',
+      value: Math.round(valueInUSD * 100) / 100, assigned_to: user.id, status: 'Inception',
     });
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
