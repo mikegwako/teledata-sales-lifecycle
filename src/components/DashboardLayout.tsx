@@ -2,6 +2,7 @@ import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { ExchangeRateBanner } from '@/components/ExchangeRateBanner';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { role } = useAuth();
