@@ -32,7 +32,7 @@ interface Document {
   content_type: string;
   created_at: string;
   uploaded_by: string;
-  uploader?: { full_name: string } | null;
+  uploader?: { full_name: string; avatar_url: string | null; avatar_position: string } | null;
 }
 
 interface Deal {
