@@ -252,7 +252,7 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
     if (!deal) return;
     const { data } = await supabase
       .from('activity_logs')
-      .select('*, profile:profiles!activity_logs_user_id_fkey(full_name)')
+      .select('*, profile:profiles!activity_logs_user_id_fkey(full_name, avatar_url, avatar_position)')
       .eq('deal_id', deal.id)
       .order('created_at', { ascending: false })
       .limit(30);
