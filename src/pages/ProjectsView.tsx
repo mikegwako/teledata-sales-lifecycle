@@ -66,6 +66,7 @@ export default function ProjectsView() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const roleMap = useUserRoles();
+  const { formatCurrency } = useCurrency();
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
   const [comments, setComments] = useState<Record<string, Comment[]>>({});
