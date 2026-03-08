@@ -103,6 +103,60 @@ export default function SmartDashboardKPIs({ deals, formatCurrency }: SmartDashb
         </Card>
       </motion.div>
 
+      {/* Closed Deals — Final Profits */}
+      {closedDeals.length > 0 && (
+        <motion.div variants={item}>
+          <Card className="shadow-card border-success/30">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-display flex items-center gap-2 text-success">
+                <DollarSign className="h-4 w-4" />Closed Deals — Final Profits ({closedDeals.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {/* Summary row */}
+              <div className="grid grid-cols-3 gap-3 mb-3 p-3 rounded-xl bg-success/5">
+                <div className="text-center">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Total Revenue</p>
+                  <p className="text-lg font-bold font-display text-foreground">{formatCurrency(closedValue)}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Total Cost</p>
+                  <p className="text-lg font-bold font-display text-foreground">{formatCurrency(closedCost)}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Net Profit ({closedMargin}%)</p>
+                  <p className={`text-lg font-bold font-display ${finalProfit >= 0 ? 'text-success' : 'text-destructive'}`}>{formatCurrency(finalProfit)}</p>
+                </div>
+              </div>
+              {/* Per-deal breakdown */}
+              <div className="space-y-2">
+                {closedDeals.slice(0, 8).map(deal => {
+                  const v = Number(deal.value || 0);
+                  const c = Number(deal.cost || 0);
+                  const p = v - c;
+                  const m = v > 0 ? Math.round((p / v) * 100) : 0;
+                  return (
+                    <div key={deal.id} className="flex items-center justify-between gap-3 text-sm p-2 rounded-lg bg-muted/30">
+                      <div className="min-w-0">
+                        <p className="font-medium text-foreground truncate">{deal.title}</p>
+                        <p className="text-[10px] text-muted-foreground">TD-{1000 + (deal.deal_number || 0)} • {deal.assigned_profile?.full_name || 'Unassigned'}</p>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0 text-xs font-mono">
+                        <span className="text-muted-foreground">{formatCurrency(c)} cost</span>
+                        <span className="text-foreground">{formatCurrency(v)} value</span>
+                        <Badge variant="outline" className={`text-[10px] ${p >= 0 ? 'border-success text-success' : 'border-destructive text-destructive'}`}>
+                          {formatCurrency(p)} ({m}%)
+                        </Badge>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
       {/* Low Margin Alerts */}
       {lowMarginDeals.length > 0 && (
         <motion.div variants={item}>
