@@ -559,11 +559,7 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
                   
                   return (
                     <motion.div key={c.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex gap-3 group">
-                      <div className="h-7 w-7 rounded-full gradient-primary flex items-center justify-center shrink-0">
-                        <span className="text-[10px] font-bold text-primary-foreground">
-                          {c.profile?.full_name?.charAt(0)?.toUpperCase() || '?'}
-                        </span>
-                      </div>
+                      <UserAvatar fullName={c.profile?.full_name} avatarUrl={c.profile?.avatar_url} avatarPosition={c.profile?.avatar_position} />
                       <div className="flex-1 bg-muted/40 rounded-lg p-2.5">
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2 flex-wrap">
