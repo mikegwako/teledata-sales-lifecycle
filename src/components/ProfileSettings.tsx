@@ -26,6 +26,7 @@ export default function ProfileSettings({ open, onOpenChange }: ProfileSettingsP
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarPosition, setAvatarPosition] = useState('center');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Sync form state when profile loads or dialog opens
@@ -36,6 +37,7 @@ export default function ProfileSettings({ open, onOpenChange }: ProfileSettingsP
       setCurrency(profile.currency_preference || 'USD');
       setAutoDelete(!!profile.auto_delete_days);
       setAvatarPreview(profile.avatar_url || null);
+      setAvatarPosition(profile.avatar_position || 'center');
     }
   }, [profile, open]);
 
@@ -84,6 +86,7 @@ export default function ProfileSettings({ open, onOpenChange }: ProfileSettingsP
       phone_number: phoneNumber,
       currency_preference: currency,
       auto_delete_days: autoDelete ? 40 : null,
+      avatar_position: avatarPosition,
     } as any).eq('id', user.id);
     
     if (error) {
@@ -110,7 +113,7 @@ export default function ProfileSettings({ open, onOpenChange }: ProfileSettingsP
             <div className="relative group">
               <Avatar className="h-20 w-20 border-2 border-border">
                 {avatarPreview ? (
-                  <AvatarImage src={avatarPreview} alt="Profile" />
+                  <AvatarImage src={avatarPreview} alt="Profile" style={{ objectPosition: avatarPosition }} className="object-cover" />
                 ) : null}
                 <AvatarFallback className="text-lg font-bold gradient-primary text-primary-foreground">{initials}</AvatarFallback>
               </Avatar>
@@ -143,6 +146,22 @@ export default function ProfileSettings({ open, onOpenChange }: ProfileSettingsP
                 </Button>
               )}
             </div>
+            {avatarPreview && (
+              <div className="flex items-center gap-1.5">
+                <Label className="text-xs text-muted-foreground">Position:</Label>
+                {(['top', 'center', 'bottom'] as const).map((pos) => (
+                  <Button
+                    key={pos}
+                    variant={avatarPosition === pos ? 'default' : 'outline'}
+                    size="sm"
+                    className="text-[10px] h-6 px-2 capitalize"
+                    onClick={() => setAvatarPosition(pos)}
+                  >
+                    {pos}
+                  </Button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
