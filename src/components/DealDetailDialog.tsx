@@ -508,10 +508,32 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
                           </div>
                           <div className="flex items-center gap-1">
                             {readers.length > 0 && (
-                              <span className="text-[9px] text-muted-foreground flex items-center gap-0.5" title={`Seen by ${readerNames.join(', ')}`}>
-                                <Eye className="h-3 w-3" />
-                                {readers.length}
-                              </span>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <button className="text-[9px] text-muted-foreground flex items-center gap-0.5 hover:text-primary transition-colors cursor-pointer">
+                                    <Eye className="h-3 w-3" />
+                                    {readers.length}
+                                  </button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-48 p-2" side="left" align="start">
+                                  <p className="text-xs font-semibold text-foreground mb-1.5">Seen by</p>
+                                  <div className="space-y-1">
+                                    {readers.map(uid => {
+                                      const p = allProfiles.find(pr => pr.id === uid);
+                                      const rRole = roleMap[uid];
+                                      return (
+                                        <div key={uid} className="flex items-center gap-2 text-xs">
+                                          <div className="h-5 w-5 rounded-full gradient-primary flex items-center justify-center shrink-0">
+                                            <span className="text-[8px] font-bold text-primary-foreground">{p?.full_name?.charAt(0)?.toUpperCase() || '?'}</span>
+                                          </div>
+                                          <span className="text-foreground truncate">{p?.full_name || 'User'}</span>
+                                          {rRole && <RoleBadge role={rRole} />}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
                             )}
                             {(role === 'admin' || c.user_id === user?.id) && (
                               <Button
