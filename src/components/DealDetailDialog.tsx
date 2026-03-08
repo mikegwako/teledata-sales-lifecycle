@@ -165,8 +165,38 @@ export default function DealDetailDialog({ deal, open, onOpenChange, onDealUpdat
       fetchComments();
       fetchDocuments();
       fetchActivityLogs();
+      fetchProfiles();
     }
   }, [deal?.id, open]);
+
+  const fetchProfiles = async () => {
+    const { data } = await supabase.from('profiles').select('id, full_name');
+    setAllProfiles((data as any) || []);
+  };
+
+  const fetchCommentReads = useCallback(async (commentIds: string[]) => {
+    if (!commentIds.length) return;
+    const { data } = await supabase
+      .from('comment_reads')
+      .select('comment_id, user_id')
+      .in('comment_id', commentIds);
+    const reads: Record<string, string[]> = {};
+    (data || []).forEach((r: any) => {
+      if (!reads[r.comment_id]) reads[r.comment_id] = [];
+      reads[r.comment_id].push(r.user_id);
+    });
+    setCommentReads(reads);
+  }, []);
+
+  const markCommentsAsRead = useCallback(async (commentIds: string[]) => {
+    if (!user || !commentIds.length) return;
+    const unread = commentIds.filter(id => !(commentReads[id] || []).includes(user.id));
+    if (!unread.length) return;
+    await Promise.all(unread.map(id =>
+      supabase.from('comment_reads').upsert({ comment_id: id, user_id: user.id }, { onConflict: 'comment_id,user_id' })
+    ));
+    fetchCommentReads(commentIds);
+  }, [user, commentReads, fetchCommentReads]);
 
   const fetchComments = async () => {
     if (!deal) return;
