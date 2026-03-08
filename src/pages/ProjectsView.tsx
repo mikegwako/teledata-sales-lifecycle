@@ -123,9 +123,17 @@ export default function ProjectsView() {
     }
   };
 
+  const frozenActions = profile?.frozen_actions || [];
+  const canComment = !frozenActions.includes('comment');
+  const canUpload = !frozenActions.includes('upload');
+
   const handleComment = async (dealId: string) => {
     const content = newComment[dealId]?.trim();
     if (!content || !user) return;
+    if (!canComment) {
+      toast({ title: 'Action restricted', description: 'Your commenting privileges have been suspended.', variant: 'destructive' });
+      return;
+    }
     const { error } = await supabase.from('comments').insert({ deal_id: dealId, user_id: user.id, content });
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
