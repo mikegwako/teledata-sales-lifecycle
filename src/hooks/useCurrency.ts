@@ -76,11 +76,19 @@ export function useCurrency() {
     return amountInDisplayCurrency;
   };
 
+  /** Format an amount that's already in the user's display currency (no conversion) */
+  const formatDisplayAmount = (amount: number) => {
+    if (currency === 'KSH') {
+      return `KSh ${amount.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+    }
+    return `$${amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  };
+
   const currencyLabel = currency === 'KSH' ? 'KSh' : '$';
 
   const rateInfo = exchangeRate
     ? `1 USD = ${exchangeRate.toLocaleString(undefined, { maximumFractionDigits: 2 })} KSh`
     : null;
 
-  return { currency, formatCurrency, toDisplayCurrency, toBaseCurrency, currencyLabel, exchangeRate, rateInfo, rateLoading };
+  return { currency, formatCurrency, formatDisplayAmount, toDisplayCurrency, toBaseCurrency, currencyLabel, exchangeRate, rateInfo, rateLoading };
 }
