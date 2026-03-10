@@ -37,10 +37,38 @@ export function AppSidebar() {
         .eq('read', false);
       setUnreadCount(count || 0);
     };
+
+    const fetchUnreadMessages = async () => {
+      // Get all conversations user is in, then count messages after last_read_at
+      const { data: participations } = await supabase
+        .from('conversation_participants')
+        .select('conversation_id, last_read_at')
+        .eq('user_id', user.id);
+
+      if (!participations || participations.length === 0) { setUnreadMessages(0); return; }
+
+      let total = 0;
+      for (const p of participations) {
+        if (p.last_read_at) {
+          const { count } = await supabase
+            .from('messages')
+            .select('*', { count: 'exact', head: true })
+            .eq('conversation_id', p.conversation_id)
+            .gt('created_at', p.last_read_at)
+            .neq('sender_id', user.id);
+          total += count || 0;
+        }
+      }
+      setUnreadMessages(total);
+    };
+
     fetchUnread();
+    fetchUnreadMessages();
+
     const channel = supabase
       .channel('sidebar-notif-count')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, () => fetchUnread())
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => fetchUnreadMessages())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [user]);
