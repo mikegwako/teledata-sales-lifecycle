@@ -25,6 +25,7 @@ export function AppSidebar() {
   const collapsed = state === 'collapsed';
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadMessages, setUnreadMessages] = useState(0);
 
   useEffect(() => {
     if (!user) return;
