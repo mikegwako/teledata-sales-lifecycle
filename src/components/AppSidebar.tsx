@@ -98,7 +98,10 @@ export function AppSidebar() {
     );
   }
 
-  navItems.push({ title: 'Notifications', url: '/notifications', icon: Bell, badge: unreadCount });
+  navItems.push(
+    { title: 'Messages', url: '/messages', icon: MessageSquare, badge: unreadMessages },
+    { title: 'Notifications', url: '/notifications', icon: Bell, badge: unreadCount },
+  );
 
   return (
     <>
