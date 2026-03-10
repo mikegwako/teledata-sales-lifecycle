@@ -16,7 +16,7 @@ import {
   SidebarFooter,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { LayoutDashboard, KanbanSquare, FilePlus, FolderOpen, LogOut, ChevronLeft, FileBarChart, Settings, Bell } from 'lucide-react';
+import { LayoutDashboard, KanbanSquare, FilePlus, FolderOpen, LogOut, ChevronLeft, FileBarChart, Settings, Bell, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export function AppSidebar() {
