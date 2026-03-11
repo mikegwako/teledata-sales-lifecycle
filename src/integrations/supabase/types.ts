@@ -488,6 +488,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      soft_delete_conversation: {
+        Args: { _conversation_id: string; _user_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "staff" | "client"
