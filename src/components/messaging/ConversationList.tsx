@@ -256,7 +256,7 @@ export function ConversationList({ selectedId, onSelect, onNewConversation }: Co
                         </div>
                       </div>
                       <p className={`text-xs truncate mt-0.5 ${c.unread_count > 0 ? 'text-foreground/70 font-medium' : 'text-muted-foreground'}`}>
-                        {c.last_message || c.description || 'No messages yet'}
+                        {others.length > 0 ? others.map(p => p.full_name || 'Unknown').join(', ') : 'Just you'}
                       </p>
                     </div>
 
