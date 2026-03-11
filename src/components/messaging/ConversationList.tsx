@@ -41,6 +41,8 @@ export function ConversationList({ selectedId, onSelect, onNewConversation }: Co
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchConversations = async () => {
     if (!user) return;
