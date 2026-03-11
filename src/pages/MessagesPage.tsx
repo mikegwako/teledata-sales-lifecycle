@@ -27,7 +27,7 @@ export default function MessagesPage() {
           <ConversationList
             key={refreshKey}
             selectedId={selectedConversationId}
-            onSelect={setSelectedConversationId}
+            onSelect={(id) => setSelectedConversationId(id || null)}
             onNewConversation={() => setNewDialogOpen(true)}
           />
         </div>

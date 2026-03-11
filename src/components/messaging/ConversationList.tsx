@@ -4,9 +4,20 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { UserAvatar } from '@/components/UserAvatar';
-import { Plus, Search, MessageSquare } from 'lucide-react';
+import { Plus, Search, MessageSquare, Trash2 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { formatDistanceToNow } from 'date-fns';
+import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface Conversation {
   id: string;
@@ -30,6 +41,8 @@ export function ConversationList({ selectedId, onSelect, onNewConversation }: Co
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchConversations = async () => {
     if (!user) return;
@@ -114,6 +127,31 @@ export function ConversationList({ selectedId, onSelect, onNewConversation }: Co
     return () => { supabase.removeChannel(channel); };
   }, [user]);
 
+  const handleDeleteConversation = async (conversationId: string) => {
+    if (!user) return;
+    setDeleting(true);
+    
+    // Soft-delete: add current user to deleted_by array
+    const { error } = await supabase.rpc('soft_delete_conversation' as any, {
+      _conversation_id: conversationId,
+      _user_id: user.id,
+    });
+
+    if (error) {
+      // Fallback: direct update
+      await supabase
+        .from('conversations')
+        .update({ deleted_by: supabase.rpc('array_append_user' as any, { _conversation_id: conversationId, _user_id: user.id }) } as any)
+        .eq('id', conversationId);
+    }
+
+    setDeleting(false);
+    setDeleteTarget(null);
+    if (selectedId === conversationId) onSelect('');
+    fetchConversations();
+    toast.success('Conversation removed from your inbox');
+  };
+
   const filtered = conversations.filter(c =>
     c.title.toLowerCase().includes(search.toLowerCase()) ||
     c.participants.some(p => p.full_name?.toLowerCase().includes(search.toLowerCase()))
@@ -164,14 +202,14 @@ export function ConversationList({ selectedId, onSelect, onNewConversation }: Co
             filtered.map(c => {
               const others = getOtherParticipants(c);
               return (
-                <button
+                <div
                   key={c.id}
-                  onClick={() => onSelect(c.id)}
-                  className={`w-full text-left px-3 py-2.5 rounded-lg transition-all group ${
+                  className={`relative w-full text-left px-3 py-2.5 rounded-lg transition-all group cursor-pointer ${
                     selectedId === c.id
                       ? 'bg-primary/10 border border-primary/20'
                       : 'hover:bg-muted/60 border border-transparent'
                   }`}
+                  onClick={() => onSelect(c.id)}
                 >
                   <div className="flex items-start gap-2.5">
                     {/* Avatar stack */}
@@ -203,9 +241,19 @@ export function ConversationList({ selectedId, onSelect, onNewConversation }: Co
                         <span className={`text-sm font-medium truncate ${c.unread_count > 0 ? 'text-foreground font-semibold' : 'text-foreground/80'}`}>
                           {c.title}
                         </span>
-                        <span className="text-[10px] text-muted-foreground shrink-0 ml-2">
-                          {formatDistanceToNow(new Date(c.updated_at), { addSuffix: false })}
-                        </span>
+                        <div className="flex items-center gap-1 shrink-0 ml-2">
+                          <span className="text-[10px] text-muted-foreground">
+                            {formatDistanceToNow(new Date(c.updated_at), { addSuffix: false })}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                            onClick={(e) => { e.stopPropagation(); setDeleteTarget(c.id); }}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </div>
                       <p className={`text-xs truncate mt-0.5 ${c.unread_count > 0 ? 'text-foreground/70 font-medium' : 'text-muted-foreground'}`}>
                         {c.last_message || c.description || 'No messages yet'}
@@ -218,12 +266,34 @@ export function ConversationList({ selectedId, onSelect, onNewConversation }: Co
                       </span>
                     )}
                   </div>
-                </button>
+                </div>
               );
             })
           )}
         </div>
       </ScrollArea>
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove conversation?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove the conversation from your inbox only. Other participants can still see it.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleting}
+              onClick={() => deleteTarget && handleDeleteConversation(deleteTarget)}
+            >
+              {deleting ? 'Removing...' : 'Remove'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
