@@ -146,6 +146,7 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string
+          deleted_by: string[]
           description: string | null
           id: string
           title: string
@@ -154,6 +155,7 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by: string
+          deleted_by?: string[]
           description?: string | null
           id?: string
           title: string
@@ -162,6 +164,7 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string
+          deleted_by?: string[]
           description?: string | null
           id?: string
           title?: string
@@ -486,6 +489,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_conversation_participant: {
+        Args: { _conversation_id: string; _user_id: string }
         Returns: boolean
       }
       soft_delete_conversation: {
