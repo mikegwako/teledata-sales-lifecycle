@@ -313,6 +313,7 @@ export type Database = {
           file_type: string | null
           file_url: string | null
           id: string
+          read_by: string[]
           sender_id: string
         }
         Insert: {
@@ -324,6 +325,7 @@ export type Database = {
           file_type?: string | null
           file_url?: string | null
           id?: string
+          read_by?: string[]
           sender_id: string
         }
         Update: {
@@ -335,6 +337,7 @@ export type Database = {
           file_type?: string | null
           file_url?: string | null
           id?: string
+          read_by?: string[]
           sender_id?: string
         }
         Relationships: [

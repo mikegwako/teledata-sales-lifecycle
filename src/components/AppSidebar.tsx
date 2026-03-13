@@ -16,7 +16,7 @@ import {
   SidebarFooter,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { LayoutDashboard, KanbanSquare, FilePlus, FolderOpen, LogOut, ChevronLeft, FileBarChart, Settings, Bell, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, KanbanSquare, FilePlus, FolderOpen, LogOut, ChevronLeft, FileBarChart, Settings, Bell, MessageSquare, ClipboardList, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export function AppSidebar() {
@@ -79,7 +79,9 @@ export function AppSidebar() {
     navItems.push(
       { title: 'Command Center', url: '/', icon: LayoutDashboard },
       { title: 'Deal Pipeline', url: '/pipeline', icon: KanbanSquare },
-      { title: 'All Projects', url: '/projects', icon: FolderOpen },
+      { title: 'All Projects', url: '/all-projects', icon: ClipboardList },
+      { title: 'All Clients', url: '/all-clients', icon: Users },
+      { title: 'My Projects', url: '/projects', icon: FolderOpen },
       { title: 'Executive Report', url: '/report', icon: FileBarChart },
     );
   }

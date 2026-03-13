@@ -12,6 +12,8 @@ import ProjectsView from "./pages/ProjectsView";
 import ExecutiveReport from "./pages/ExecutiveReport";
 import NotificationsPage from "./pages/NotificationsPage";
 import MessagesPage from "./pages/MessagesPage";
+import AdminProjectList from "./pages/AdminProjectList";
+import AdminClientList from "./pages/AdminClientList";
 import DashboardLayout from "./components/DashboardLayout";
 import { Loader2 } from "lucide-react";
 import { useInactivityLogout } from "@/hooks/useInactivityLogout";
@@ -49,6 +51,14 @@ function AppRoutes() {
 
         {role === 'admin' && (
           <Route path="/report" element={<ExecutiveReport />} />
+        )}
+
+        {role === 'admin' && (
+          <Route path="/all-projects" element={<AdminProjectList />} />
+        )}
+
+        {role === 'admin' && (
+          <Route path="/all-clients" element={<AdminClientList />} />
         )}
         
         <Route path="/projects" element={<ProjectsView />} />
