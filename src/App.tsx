@@ -52,6 +52,14 @@ function AppRoutes() {
         {role === 'admin' && (
           <Route path="/report" element={<ExecutiveReport />} />
         )}
+
+        {role === 'admin' && (
+          <Route path="/all-projects" element={<AdminProjectList />} />
+        )}
+
+        {role === 'admin' && (
+          <Route path="/all-clients" element={<AdminClientList />} />
+        )}
         
         <Route path="/projects" element={<ProjectsView />} />
         <Route path="/notifications" element={<NotificationsPage />} />
