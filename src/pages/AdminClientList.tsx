@@ -28,7 +28,7 @@ interface ClientInfo {
 
 export default function AdminClientList() {
   const { role } = useAuth();
-  const { formatAmount } = useCurrency();
+  const { formatCurrency } = useCurrency();
   const [clients, setClients] = useState<ClientInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');

@@ -48,7 +48,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function AdminProjectList() {
   const { role } = useAuth();
-  const { formatAmount } = useCurrency();
+  const { formatCurrency } = useCurrency();
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
