@@ -222,10 +222,10 @@ export default function AdminProjectList() {
                           <TableCell className="text-xs text-muted-foreground">{d.service_type || '—'}</TableCell>
                           <TableCell className="text-sm">{d.client_name}</TableCell>
                           <TableCell className="text-sm">{d.staff_name}</TableCell>
-                          <TableCell className="text-right text-sm font-medium">{formatAmount(d.value || 0)}</TableCell>
-                          <TableCell className="text-right text-sm">{formatAmount(d.cost || 0)}</TableCell>
+                          <TableCell className="text-right text-sm font-medium">{formatCurrency(d.value || 0)}</TableCell>
+                          <TableCell className="text-right text-sm">{formatCurrency(d.cost || 0)}</TableCell>
                           <TableCell className={`text-right text-sm font-semibold ${profit >= 0 ? 'text-green-600' : 'text-destructive'}`}>
-                            {formatAmount(profit)}
+                            {formatCurrency(profit)}
                           </TableCell>
                           <TableCell className="text-xs text-muted-foreground">
                             {d.created_at ? new Date(d.created_at).toLocaleDateString() : '—'}

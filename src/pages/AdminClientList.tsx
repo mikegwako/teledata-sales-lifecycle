@@ -180,9 +180,9 @@ export default function AdminClientList() {
                         <TableCell className="text-center">
                           <Badge variant="outline" className="text-xs text-primary">{c.active_projects}</Badge>
                         </TableCell>
-                        <TableCell className="text-right text-sm font-medium">{formatAmount(c.total_value)}</TableCell>
+                        <TableCell className="text-right text-sm font-medium">{formatCurrency(c.total_value)}</TableCell>
                         <TableCell className={`text-right text-sm font-semibold ${c.total_profit >= 0 ? 'text-green-600' : 'text-destructive'}`}>
-                          {formatAmount(c.total_profit)}
+                          {formatCurrency(c.total_profit)}
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
                           {c.created_at ? new Date(c.created_at).toLocaleDateString() : '—'}
