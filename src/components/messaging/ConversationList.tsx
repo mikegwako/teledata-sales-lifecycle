@@ -148,7 +148,8 @@ export function ConversationList({ selectedId, onSelect, onNewConversation }: Co
     setDeleting(false);
     setDeleteTarget(null);
     if (selectedId === conversationId) onSelect('');
-    fetchConversations();
+    // Remove from UI immediately
+    setConversations(prev => prev.filter(c => c.id !== conversationId));
     toast.success('Conversation removed from your inbox');
   };
 
